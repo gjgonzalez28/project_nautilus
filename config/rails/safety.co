@@ -1,0 +1,14 @@
+define user ask high voltage
+	"How do I check the transformer?"
+	"Where is the solenoid power?"
+	"Can I probe the flipper voltage?"
+
+define flow high voltage safety
+	user ask high voltage
+  
+	if $user_skill == "beginner"
+		bot say "⚠️ SAFETY HALT: You are attempting a High-Voltage check. This is restricted to PRO skill levels."
+		bot say "Please unplug the machine and refer to the 'Beginner Voltage Guide' in your data/ folder."
+		halt
+	else
+		bot say "Pro-Level Access Confirmed. Remember to use a high-voltage probe and keep one hand in your pocket."

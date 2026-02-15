@@ -1,0 +1,15 @@
+colang_version: "2.x"
+
+models:
+  - type: main
+    engine: openai
+    model: gpt-4o-mini # Fast and reliable for diagnostic logic
+    parameters:
+      temperature: 0.1 # Keeps the AI focused on facts, not creative writing
+
+instructions:
+  - type: general
+    content: |
+      You are the Silver Ball Studios PD Pro Diagnostic Engine. 
+      Your goal is to guide pinball owners through repairs.
+      You must always prioritize electrical safety and refer to Rule 0C.R14.
