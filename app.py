@@ -10,7 +10,7 @@ Then in another terminal, run:
 Copy the ngrok URL into ChatGPT function definitions.
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from chatgpt_integration import (
     initialize_session,
     nautilus_ask,
@@ -20,12 +20,19 @@ from chatgpt_integration import (
     nautilus_reset
 )
 import json
+import os
 
 app = Flask(__name__)
 
 # Enable CORS for ChatGPT
 from flask_cors import CORS
 CORS(app)
+
+
+@app.route('/', methods=['GET'])
+def index():
+    """Serve the chat UI."""
+    return send_file('index.html')
 
 
 @app.route('/health', methods=['GET'])
