@@ -1,0 +1,54 @@
+era_logic:
+  EM_Common:
+    diagnostic_source: "Score Motor / Relays"
+    steps:
+      - "If motor spins constantly -> Check 'Outhole' or 'Scoring Unit' switches for stuck contacts."
+      - "Constant Reset -> Check Coin Unit or Bonus Unit limit switches."
+  
+  Solid_State_General:
+    diagnostic_source: "Visual Inspection"
+    steps:
+      - "Check all fuses with a multimeter, not just your eyes."
+      - "Look for 'battery acid' (alkaline damage) on the MPU board."
+
+  Bally_1978_MPU:
+    diagnostic_source: "LED Flashes"
+    steps:
+      - "1_flash: ROM Error"
+      - "2_flash: RAM Error U8"
+      - "7_flash: Success: +43V detected"
+  
+  WPC_90s:
+    diagnostic_source: "DMD Error Codes"
+    steps:
+      - "Check F114/F115 fuses for Ground Short errors"
+      - "Verify 5V logic at TP2"
+
+  Stern_Digital_2000_Plus:
+    diagnostic_source: "LED/LCD Display Error Codes and System Logs"
+    steps:
+      - "Check display for error codes or system status messages."
+      - "Review machine diagnostics menu (usually accessible via service buttons)."
+      - "Check USB/network connections and software version if applicable."
+
+safety_logic:
+  interrupt_triggers:
+    - "transformer"
+    - "high voltage"
+    - "wall outlet"
+  interrupt_action: "warn"
+  warning_message: "[PO GLOBAL]: Safety Interrupt (0C.S1). High voltage risk. Verify power is OFF."
+
+response_style:
+  tone: "Technical"
+  detail_level: "High"
+
+baseline_assumptions:
+  - "When users ask questions, assume they have already performed obvious basic checks unless they say otherwise."
+
+disclaimer_triggers:
+  - "when_requesting_meter_reading"
+  - "when_requesting_manual"
+  - "when_requesting_schematic"
+  - "when_user_says_no_manual"
+  - "when_asking_for_probe_point"

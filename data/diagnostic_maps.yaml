@@ -1,0 +1,916 @@
+# Diagnostic maps keyed by symptom
+# Each map provides the full STF picture; modes select how many steps to show.
+
+symptom_maps:
+  left_flipper_dead:
+    title: "Left flipper not working"
+    overview: "Full STF map for left flipper failure; modes control how many checks are surfaced."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Cabinet button"
+            action: "Check for stuck/broken switch or loose wires."
+          - id: "S2"
+            area: "Cabinet wiring"
+            action: "Verify continuity from switch to harness."
+          - id: "S3"
+            area: "Connectors"
+            action: "Reseat and inspect for burnt pins (under-cab/playfield)."
+          - id: "S4"
+            area: "Flipper coil"
+            action: "Check lug wires and coil sleeve binding."
+      true:
+        checks:
+          - id: "T1"
+            area: "Fuses"
+            action: "Verify flipper power fuse continuity (e.g., F114/F115 on WPC)."
+          - id: "T2"
+            area: "Power"
+            action: "Confirm flipper supply at test point (e.g., +50V where applicable)."
+          - id: "T3"
+            area: "EOS switch"
+            action: "Confirm correct adjustment and continuity."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Driver transistor"
+            action: "Test the left flipper driver transistor."
+          - id: "F2"
+            area: "Pre-driver/diode"
+            action: "Check associated pre-driver and diode."
+          - id: "F3"
+            area: "Repair"
+            action: "Replace failed component if confirmed by measurement."
+    branches:
+      - condition: "both flippers dead"
+        focus:
+          - "Shared power path: fuses, connectors, supply voltage."
+      - condition: "left only dead"
+        focus:
+          - "Cabinet switch and wiring."
+          - "Connector, coil, and driver transistor."
+
+  right_flipper_dead:
+    title: "Right flipper not working"
+    overview: "Mirror of left flipper; same STF logic applied to right side."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Cabinet button"
+            action: "Check right flipper button for stuck/broken switch or loose wires."
+          - id: "S2"
+            area: "Cabinet wiring"
+            action: "Verify continuity from right button to harness."
+          - id: "S3"
+            area: "Connectors"
+            action: "Reseat and inspect right flipper connector for burnt pins."
+          - id: "S4"
+            area: "Flipper coil"
+            action: "Check right coil lugs and sleeve binding."
+      true:
+        checks:
+          - id: "T1"
+            area: "Fuses"
+            action: "Verify right flipper fuse continuity."
+          - id: "T2"
+            area: "Power"
+            action: "Confirm right flipper supply voltage at test point."
+          - id: "T3"
+            area: "EOS switch"
+            action: "Check right EOS switch continuity and adjustment."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Driver transistor"
+            action: "Test the right flipper driver transistor (mirror of left)."
+          - id: "F2"
+            area: "Pre-driver/diode"
+            action: "Check associated pre-driver and diode."
+          - id: "F3"
+            area: "Repair"
+            action: "Replace failed component if confirmed."
+    branches:
+      - condition: "both flippers dead"
+        focus:
+          - "Check shared power path first before isolating right side."
+      - condition: "right only dead"
+        focus:
+          - "Right button, wiring, connector, and right driver."
+
+  bumpers_not_working:
+    title: "Bumpers not firing or staying silent"
+    overview: "Bumpers are solenoid-based; diagnosis splits between mechanical jam vs electrical failure."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Bumper assembly"
+            action: "Manually depress bumper button; listen for solenoid click."
+          - id: "S2"
+            area: "Bumper wiring"
+            action: "Inspect harness for loose/broken wires at bumper base."
+          - id: "S3"
+            area: "Connectors"
+            action: "Reseat bumper connector (under playfield)."
+          - id: "S4"
+            area: "Bumper skirt"
+            action: "Ensure skirt moves freely and isn't stuck/jamming solenoid."
+      true:
+        checks:
+          - id: "T1"
+            area: "Fuses"
+            action: "Confirm bumper solenoid power fuse continuity."
+          - id: "T2"
+            area: "Solenoid voltage"
+            action: "Measure supply voltage to bumper connector."
+          - id: "T3"
+            area: "Switch closure"
+            action: "Confirm bumper switch is closing on ball detection."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Solenoid coil"
+            action: "Test bumper solenoid coil for continuity/shorts."
+          - id: "F2"
+            area: "Driver transistor"
+            action: "Check bumper driver transistor on main board."
+          - id: "F3"
+            area: "Repair"
+            action: "Replace failed solenoid or driver if confirmed."
+    branches:
+      - condition: "all bumpers dead"
+        focus:
+          - "Shared solenoid power line and main driver."
+      - condition: "one bumper dead"
+        focus:
+          - "Individual bumper wiring, connector, solenoid, and driver."
+
+  slingshots_not_firing:
+    title: "Slingshots not firing or not moving"
+    overview: "Slingshots use switches and solenoids; failure is often switch-related."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Slingshot mechanics"
+            action: "Manually press slingshot arm; check for mechanical binding or jam."
+          - id: "S2"
+            area: "Slingshot wiring"
+            action: "Inspect wires on both left and right slingshots for damage."
+          - id: "S3"
+            area: "Connectors"
+            action: "Reseat slingshot connectors under playfield."
+          - id: "S4"
+            area: "Switch contact"
+            action: "Verify slingshot switch contact is clean and making connection."
+      true:
+        checks:
+          - id: "T1"
+            area: "Fuses"
+            action: "Confirm slingshot solenoid fuse is good."
+          - id: "T2"
+            area: "Solenoid supply"
+            action: "Measure voltage at slingshot connector."
+          - id: "T3"
+            area: "Switch voltage drop"
+            action: "Confirm switch closure causes voltage drop at solenoid."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Slingshot switch"
+            action: "Test switch continuity with multimeter."
+          - id: "F2"
+            area: "Solenoid coil"
+            action: "Test slingshot solenoid coil for continuity."
+          - id: "F3"
+            area: "Repair/replace"
+            action: "Replace switch, solenoid, or driver as needed."
+    branches:
+      - condition: "both slingshots dead"
+        focus:
+          - "Shared slingshot power circuit; check main fuse and driver."
+      - condition: "one slingshot dead"
+        focus:
+          - "Individual switch, wiring, solenoid, and driver."
+
+  playfield_balls_getting_stuck:
+    title: "Balls getting stuck or moving slowly on playfield"
+    overview: "Mechanical playfield issue; focus on surface and angle."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Playfield surface"
+            action: "Inspect for debris, sticky residue, or warping."
+          - id: "S2"
+            area: "Playfield angle"
+            action: "Measure playfield levelness using a ball (should roll steadily)."
+          - id: "S3"
+            area: "Playfield hardware"
+            action: "Check posts, ramps, and guides for obstructions or damage."
+          - id: "S4"
+            area: "Bumper/ramp angles"
+            action: "Verify individual ramps and bumper bases aren't misaligned."
+      true:
+        checks:
+          - id: "T1"
+            area: "Level measurement"
+            action: "Use a spirit level to confirm playfield tilt (typically 6-7 degrees)."
+          - id: "T2"
+            area: "Surface friction"
+            action: "Test ball roll speed; compare to factory specs if available."
+          - id: "T3"
+            area: "Hardware gaps"
+            action: "Measure clearances under posts, ramps to isolation."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Waxing"
+            action: "Clean playfield with mineral spirits and apply pinball wax."
+          - id: "F2"
+            area: "Leveling"
+            action: "Adjust cabinet feet to restore proper playfield angle."
+          - id: "F3"
+            area: "Hardware adjustment/replacement"
+            action: "Replace damaged posts or ramps causing ball drag."
+    branches:
+      - condition: "stuck in one spot"
+        focus:
+          - "Local surface issue, post misalignment, or debris."
+      - condition: "slow everywhere"
+        focus:
+          - "Playfield tilt angle or general wax buildup."
+
+  solenoid_clicking_not_firing:
+    title: "Solenoid clicks but doesn't fire (no movement)"
+    overview: "Coil energizes but mechanism doesn't move; plunger or spring failure."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Plunger/armature"
+            action: "Manually move plunger or armature; check for binding or sticking."
+          - id: "S2"
+            area: "Spring tension"
+            action: "Inspect return spring for breakage or detachment."
+          - id: "S3"
+            area: "Coil alignment"
+            action: "Verify coil and plunger are concentric (no rubbing)."
+          - id: "S4"
+            area: "Fasteners"
+            action: "Check all solenoid mounting bolts are tight."
+      true:
+        checks:
+          - id: "T1"
+            area: "Coil continuity"
+            action: "Measure coil resistance (typical 3-10 ohms depending on type)."
+          - id: "T2"
+            area: "Supply voltage"
+            action: "Confirm voltage present at coil terminals when energized."
+          - id: "T3"
+            area: "Plunger travel"
+            action: "Manually energize coil (if safe) and observe armature movement."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Solenoid coil"
+            action: "Replace coil if resistance is out of spec or internal short suspected."
+          - id: "F2"
+            area: "Return spring"
+            action: "Replace return spring if broken or weak."
+          - id: "F3"
+            area: "Solenoid assembly"
+            action: "Replace entire solenoid if plunger is bent or coil housing damaged."
+    branches:
+      - condition: "clicks loudly but no movement"
+        focus:
+          - "Plunger jam, spring failure, or coil misalignment."
+      - condition: "quiet click or weak movement"
+        focus:
+          - "Low coil resistance or partial spring failure."
+
+  ramp_not_accepting_ball:
+    title: "Ball rolls off ramp or won't enter ramp"
+    overview: "Ramp angle, switch closure, or blockage issue."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Ramp surface"
+            action: "Inspect ramp for debris, cracks, or warping."
+          - id: "S2"
+            area: "Ramp angle"
+            action: "Check ramp alignment and angle relative to playfield."
+          - id: "S3"
+            area: "Guide rails"
+            action: "Verify guide rails are parallel and not bent."
+          - id: "S4"
+            area: "Entrance opening"
+            action: "Confirm entrance isn't blocked by nearby hardware or debris."
+      true:
+        checks:
+          - id: "T1"
+            area: "Ramp level"
+            action: "Use spirit level to confirm ramp angle is correct."
+          - id: "T2"
+            area: "Entry switch"
+            action: "Test ramp entry switch closure with multimeter."
+          - id: "T3"
+            area: "Ramp gap"
+            action: "Measure clearance between playfield and ramp entrance."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Waxing"
+            action: "Clean and wax ramp surface for better ball flow."
+          - id: "F2"
+            area: "Leveling"
+            action: "Adjust ramp mounting to correct angle (consult manual)."
+          - id: "F3"
+            area: "Replacement"
+            action: "Replace ramp if cracked or structurally damaged."
+    branches:
+      - condition: "ball bounces off entrance"
+        focus:
+          - "Ramp entrance angle and guide rail alignment."
+      - condition: "ball enters but rolls back down"
+        focus:
+          - "Ramp incline angle too shallow or surface too slippery."
+
+  lights_not_illuminating:
+    title: "Lights not lighting on playfield or backbox"
+    overview: "Bulb, socket, or driver circuit failure."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Bulb inspection"
+            action: "Remove and inspect bulb for burnt filament or blackening."
+          - id: "S2"
+            area: "Socket inspection"
+            action: "Check socket for corrosion, loose wires, or debris."
+          - id: "S3"
+            area: "Wiring harness"
+            action: "Inspect socket wiring for breaks or loose connections."
+          - id: "S4"
+            area: "Neighboring lights"
+            action: "Test nearby lights in the same circuit to isolate the issue."
+      true:
+        checks:
+          - id: "T1"
+            area: "Bulb continuity"
+            action: "Test bulb filament with multimeter (should show continuity)."
+          - id: "T2"
+            area: "Supply voltage"
+            action: "Measure voltage at socket when light is supposed to be on."
+          - id: "T3"
+            area: "Circuit continuity"
+            action: "Verify continuity from power source through socket to ground."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Bulb replacement"
+            action: "Install new bulb of correct type and wattage."
+          - id: "F2"
+            area: "Socket cleaning"
+            action: "Clean corrosion from socket contacts with pencil eraser or contact spray."
+          - id: "F3"
+            area: "Driver circuit"
+            action: "If multiple lights in circuit fail, check driver on main board."
+    branches:
+      - condition: "single light out"
+        focus:
+          - "Bulb, socket, and immediate wiring."
+      - condition: "multiple lights in same circuit"
+        focus:
+          - "Shared power line, main fuse, or driver transistor."
+
+  ball_drains_no_return:
+    title: "Ball drains but doesn't return to shooter"
+    overview: "Ball exits when player isn't ready; issue is shuttle/kicker mechanism."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Drain opening"
+            action: "Verify drain hole is clear and not blocked by debris."
+          - id: "S2"
+            area: "Shuttle/kicker arm"
+            action: "Check shuttle arm for binding, cracks, or misalignment."
+          - id: "S3"
+            area: "Spring tension"
+            action: "Inspect return spring; verify it's attached and not broken."
+          - id: "S4"
+            area: "Drain switch"
+            action: "Manually trigger drain switch; listen for solenoid click."
+      true:
+        checks:
+          - id: "T1"
+            area: "Solenoid voltage"
+            action: "Measure voltage supply to drain solenoid when ball drains."
+          - id: "T2"
+            area: "Switch continuity"
+            action: "Test drain switch continuity with multimeter."
+          - id: "T3"
+            area: "Solenoid resistance"
+            action: "Measure solenoid coil resistance (typically 3-10 ohms)."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Solenoid replacement"
+            action: "Replace drain solenoid if coil is burned or shorted."
+          - id: "F2"
+            area: "Shuttle arm"
+            action: "Replace shuttle arm if bent or cracked beyond repair."
+          - id: "F3"
+            area: "Switch/spring"
+            action: "Replace drain switch or return spring if broken."
+    branches:
+      - condition: "ball drains immediately on launch"
+        focus:
+          - "Shuttle arm position; spring tension; switch closure timing."
+      - condition: "ball drains during play"
+        focus:
+          - "Drain opening blockage; switch malfunction."
+
+  no_ball_detection:
+    title: "Machine doesn't detect ball or playfield is unresponsive"
+    overview: "Ball detection circuit failure; playfield switches not registering hits."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Playfield switches"
+            action: "Manually press playfield switches (bumpers, ramps, targets); listen for activation."
+          - id: "S2"
+            area: "Switch wiring"
+            action: "Inspect all playfield switch wiring for damage or loose connections."
+          - id: "S3"
+            area: "Switch connectors"
+            action: "Reseat all playfield switch connectors under the playfield."
+          - id: "S4"
+            area: "Ball in the machine"
+            action: "Verify a ball is actually in the machine; not stuck elsewhere."
+      true:
+        checks:
+          - id: "T1"
+            area: "Switch continuity"
+            action: "Test individual playfield switches for continuity with multimeter."
+          - id: "T2"
+            area: "Common wire"
+            action: "Check continuity of common wire shared by all playfield switches."
+          - id: "T3"
+            area: "Switch matrix"
+            action: "Verify switch matrix signals on main board (consult manual for test points)."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Switch replacement"
+            action: "Replace failed playfield switches one at a time."
+          - id: "F2"
+            area: "Matrix decoder"
+            action: "Check or replace switch matrix decoder chip if multiple switches fail."
+          - id: "F3"
+            area: "CPU diagnosis"
+            action: "If all switches fail, main CPU or power supply may be faulty."
+    branches:
+      - condition: "single switch dead"
+        focus:
+          - "Individual switch continuity and connector."
+      - condition: "all playfield switches dead"
+        focus:
+          - "Common wire; switch matrix; power supply."
+
+  backglass_display_issues:
+    title: "Backglass display not working (DMD, LED, or dot matrix)"
+    overview: "Display control failure; check power, connectors, and display module."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Display power"
+            action: "Look for dim or dark display; verify power is reaching the module."
+          - id: "S2"
+            area: "Connector check"
+            action: "Inspect display data and power connectors for loose pins or corrosion."
+          - id: "S3"
+            area: "Display surface"
+            action: "Check for cracks, missing segments, burned dots, or physical damage."
+          - id: "S4"
+            area: "Cable integrity"
+            action: "Inspect ribbon cable from main board to display for creases or separations."
+      true:
+        checks:
+          - id: "T1"
+            area: "Display voltage"
+            action: "Measure power supply voltage to display (typically 12V, 5V, or 9V)."
+          - id: "T2"
+            area: "Signal presence"
+            action: "Check if data signal is present on display cable with oscilloscope or logic probe."
+          - id: "T3"
+            area: "Backlight"
+            action: "For LCD/LED displays, check if backlight illuminate even without image."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Display module"
+            action: "Replace entire display module if electrical tests pass but no image."
+          - id: "F2"
+            area: "Display connector"
+            action: "Replace damaged connector or resolder loose connections."
+          - id: "F3"
+            area: "Main board repair"
+            action: "If power fails to display, check display driver chip on main board."
+    branches:
+      - condition: "completely dark"
+        focus:
+          - "Power supply to display; connector integrity."
+      - condition: "partial image or dim"
+        focus:
+          - "Backlight; power supply voltage; data signal."
+
+  flippers_weak_or_slow:
+    title: "Flippers are weak, slow, or don't travel fully"
+    overview: "Low power, mechanical obstruction, or EOS switch misadjustment."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Flipper travel"
+            action: "Manually press flipper; check if it reaches full up position without resistance."
+          - id: "S2"
+            area: "Solenoid plunger"
+            action: "Inspect flipper coil plunger for binding, corrosion, or misalignment."
+          - id: "S3"
+            area: "EOS switch"
+            action: "Check if EOS (end of stroke) switch is properly adjusted and making contact."
+          - id: "S4"
+            area: "Mechanical wear"
+            action: "Test flipper bushings for excessive wear allowing shaft misalignment."
+      true:
+        checks:
+          - id: "T1"
+            area: "Supply voltage"
+            action: "Measure flipper solenoid supply voltage (should be full supply, typically 50V or more)."
+          - id: "T2"
+            area: "EOS timing"
+            action: "Verify EOS switch closes at correct moment in flipper stroke (consult manual)."
+          - id: "T3"
+            area: "Coil resistance"
+            action: "Measure solenoid coil resistance; compare to specifications."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Coil replacement"
+            action: "Replace flipper solenoid coil if resistance is out of spec."
+          - id: "F2"
+            area: "EOS adjustment"
+            action: "Adjust or replace EOS switch for proper timing."
+          - id: "F3"
+            area: "Mechanical rebuild"
+            action: "Replace flipper bushings, pivot posts, or plunger if worn."
+    branches:
+      - condition: "weak on both sides"
+        focus:
+          - "Shared power supply; voltage regulation; coil quality."
+      - condition: "weak on one side"
+        focus:
+          - "Individual solenoid; EOS switch; mechanical wear on that flipper."
+
+  drop_targets_stuck:
+    title: "Drop target(s) stuck in up or down position"
+    overview: "Solenoid failure, mechanical jam, or switch misadjustment."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Target assembly"
+            action: "Manually try to raise/lower the stuck drop target; check for binding."
+          - id: "S2"
+            area: "Return spring"
+            action: "Inspect spring for breakage or detachment."
+          - id: "S3"
+            area: "Target wiring"
+            action: "Look for loose wires or connectors on the drop target solenoid."
+          - id: "S4"
+            area: "Debris"
+            action: "Clear any debris or coins jamming the target mechanism."
+      true:
+        checks:
+          - id: "T1"
+            area: "Solenoid voltage"
+            action: "Measure voltage to drop target solenoid when triggered."
+          - id: "T2"
+            area: "Switch position"
+            action: "Test drop target position switch for continuity in both up and down states."
+          - id: "T3"
+            area: "Reset circuit"
+            action: "Verify reset solenoid (if present) receives voltage to reset bank."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Solenoid"
+            action: "Replace drop target solenoid if coil is burned or shorted."
+          - id: "F2"
+            area: "Return spring"
+            action: "Replace broken return spring."
+          - id: "F3"
+            area: "Target unit"
+            action: "Replace entire drop target unit if mechanical damage is severe."
+    branches:
+      - condition: "stuck down (won't pop up)"
+        focus:
+          - "Solenoid power; reset circuit; spring condition."
+      - condition: "stuck up (won't drop)"
+        focus:
+          - "Position switch; reset mechanism; gravity issue."
+
+  orbits_not_working:
+    title: "Orbit ramp not working or ball loses time on orbit"
+    overview: "Ramp surface issue, ball detection problem, or playfield angle."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Ramp surface"
+            action: "Inspect orbit surface for warping, cracks, or debris buildup."
+          - id: "S2"
+            area: "Ramp angle"
+            action: "Check ramp angle; should allow ball to travel smoothly without rolling off."
+          - id: "S3"
+            area: "Guide rails"
+            action: "Verify guide rails are parallel, smooth, and not dented or bent."
+          - id: "S4"
+            area: "Playfield level"
+            action: "Confirm playfield is properly leveled (may affect ball speed)."
+      true:
+        checks:
+          - id: "T1"
+            area: "Orbit switch"
+            action: "Test orbit entry/exit switches for continuity and proper closure."
+          - id: "T2"
+            area: "Ramp level"
+            action: "Use spirit level to verify orbit ramp angle (consult manual for spec)."
+          - id: "T3"
+            area: "Surface texture"
+            action: "Press on orbit surface to identify soft spots or delamination."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Surface waxing"
+            action: "Clean and wax orbit surface thoroughly."
+          - id: "F2"
+            area: "Ramp replacement"
+            action: "Replace orbit ramp if cracked, warped, or severely worn."
+          - id: "F3"
+            area: "Playfield angle"
+            action: "Adjust playfield feet to restore proper angle."
+    branches:
+      - condition: "ball exits prematurely"
+        focus:
+          - "Ramp angle; guide rail alignment; waxing."
+      - condition: "ball slow through orbit"
+        focus:
+          - "Surface friction; playfield angle; switch detection."
+
+  spinners_not_counting:
+    title: "Spinner ramp hits but doesn't register points"
+    overview: "Spinner switch failure or signal routing issue."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Spinner mechanism"
+            action: "Manually spin the spinner by hand; it should rotate freely."
+          - id: "S2"
+            area: "Switch contact"
+            action: "Observe spinner switch during manual spin; should click for each rotation."
+          - id: "S3"
+            area: "Wiring"
+            action: "Inspect spinner switch wiring for loose connections or breaks."
+          - id: "S4"
+            area: "Ramp entry"
+            action: "Verify ball is entering spinner ramp (not bypassing it)."
+      true:
+        checks:
+          - id: "T1"
+            area: "Switch continuity"
+            action: "Test spinner switch for continuity in open and closed states."
+          - id: "T2"
+            area: "Switch resistance"
+            action: "Measure switch resistance; compare to normal switch values."
+          - id: "T3"
+            area: "Debounce timing"
+            action: "Verify CPU detects each switch pulse (consult manual for timing specs)."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Switch replacement"
+            action: "Replace spinner switch with correct switch type."
+          - id: "F2"
+            area: "CPU signal"
+            action: "If switch tests OK, check CPU spinner counter circuit on main board."
+          - id: "F3"
+            area: "Spinner assembly"
+            action: "Replace entire spinner unit if mechanical damage prevents proper function."
+    branches:
+      - condition: "spinner spins but no count"
+        focus:
+          - "Switch continuity; CPU signal routing."
+      - condition: "spinner stiff or won't spin"
+        focus:
+          - "Bearing wear; mechanical obstruction."
+
+  kickback_not_working:
+    title: "Kickback lane doesn't fire or ball doesn't return"
+    overview: "Kickback solenoid or switch failure; directional lane issue."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Kickback entry"
+            action: "Roll ball through kickback lane manually; it should trigger smoothly."
+          - id: "S2"
+            area: "Solenoid plunger"
+            action: "Manually activate kickback solenoid; plunger should extend with force."
+          - id: "S3"
+            area: "Lane guide"
+            action: "Check lane guide is clear and not bent; ball should travel straight through."
+          - id: "S4"
+            area: "Return spring"
+            action: "Inspect kickback return spring for breakage or weak tension."
+      true:
+        checks:
+          - id: "T1"
+            area: "Lane switch"
+            action: "Test kickback entry switch for continuity and proper closure."
+          - id: "T2"
+            area: "Solenoid voltage"
+            action: "Measure voltage to kickback solenoid when triggered."
+          - id: "T3"
+            area: "Solenoid coil"
+            action: "Test solenoid coil resistance; compare to specifications."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Solenoid replacement"
+            action: "Replace kickback solenoid if coil is burned or voltage is low."
+          - id: "F2"
+            area: "Switch replacement"
+            action: "Replace lane entry switch if continuity test fails."
+          - id: "F3"
+            area: "Spring replacement"
+            action: "Replace return spring if broken or weak."
+    branches:
+      - condition: "switch triggers but no kick"
+        focus:
+          - "Solenoid power; coil condition."
+      - condition: "no ball entry detection"
+        focus:
+          - "Switch continuity; lane alignment."
+
+  machine_power_issues:
+    title: "Machine won't power on or resets unexpectedly"
+    overview: "Power supply failure, fuse issue, or connection problem."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Power cable"
+            action: "Verify power plug is firmly inserted into wall outlet and connector is secure."
+          - id: "S2"
+            area: "Main breaker"
+            action: "Check main breaker/power switch on cabinet; ensure it's in ON position."
+          - id: "S3"
+            area: "Ground wire"
+            action: "Verify cabinet ground strap is connected and making good contact."
+          - id: "S4"
+            area: "External power"
+            action: "Test outlet with another device to confirm wall power is good."
+      true:
+        checks:
+          - id: "T1"
+            area: "Main fuse"
+            action: "Check main power fuse for continuity; replace if blown."
+          - id: "T2"
+            area: "Power supply voltage"
+            action: "Measure output voltages from power supply PCB (typically 12V, 5V, 50V, etc.)."
+          - id: "T3"
+            area: "CPU power"
+            action: "Verify CPU board is receiving stable power (9V or 5V nominal)."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Main fuse"
+            action: "Replace blown main fuse with correct amperage."
+          - id: "F2"
+            area: "Power supply"
+            action: "Replace power supply if voltages are absent or unstable."
+          - id: "F3"
+            area: "CPU/main board"
+            action: "If power is good but CPU won't start, main board may need repair."
+    branches:
+      - condition: "completely dead"
+        focus:
+          - "Wall power; main fuse; main breaker."
+      - condition: "resets during play"
+        focus:
+          - "Power supply stability; ground connections; CPU load."
+
+  audio_not_working:
+    title: "Speaker(s) not producing sound or audio very quiet"
+    overview: "Speaker failure, amplifier issue, or sound board problem."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Speaker cones"
+            action: "Inspect speakers for tears, corrosion, or physical damage to cones."
+          - id: "S2"
+            area: "Connections"
+            action: "Check speaker wiring for loose connectors or disconnected wires."
+          - id: "S3"
+            area: "Amplifier cooling"
+            action: "Feel amplifier heatsink; if burned hot, amp may be failing."
+          - id: "S4"
+            area: "Volume control"
+            action: "Verify cabinet volume control is not turned all the way down."
+      true:
+        checks:
+          - id: "T1"
+            area: "Speaker resistance"
+            action: "Measure speaker impedance (typically 8 ohms); compare to specifications."
+          - id: "T2"
+            area: "Amplifier output"
+            action: "Test amplifier output voltage with multimeter (should be non-zero during game sound)."
+          - id: "T3"
+            area: "Audio signal"
+            action: "Check if CPU audio output is present (consult manual for audio test point)."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Speaker replacement"
+            action: "Replace failed speaker with matching impedance and power rating."
+          - id: "F2"
+            area: "Amplifier repair/replacement"
+            action: "Replace amplifier if voltages are wrong or output fails."
+          - id: "F3"
+            area: "Sound board"
+            action: "If CPU audio is dead, sound generation chip on main board may be faulty."
+    branches:
+      - condition: "completely silent"
+        focus:
+          - "Speaker connections; amplifier power; audio signal from CPU."
+      - condition: "very quiet"
+        focus:
+          - "Volume setting; speaker condition; amplifier output level."
+
+  ball_stuck_in_machine:
+    title: "Ball is stuck or lodged in playfield/cabinet"
+    overview: "Physical obstruction; need to safely retrieve ball and identify root cause."
+    stf:
+      straight:
+        checks:
+          - id: "S1"
+            area: "Playfield inspection"
+            action: "Look under playfield; identify where ball is lodged (post, ramp, drain, other)."
+          - id: "S2"
+            area: "Safe removal"
+            action: "Remove playfield glass safely if needed; gently extract ball without forcing."
+          - id: "S3"
+            area: "Obstruction check"
+            action: "After removal, examine area for debris, broken parts, or misalignment that trapped the ball."
+          - id: "S4"
+            area: "Ramp/drain patency"
+            action: "Verify drain and exit ramps are clear and not blocked."
+      true:
+        checks:
+          - id: "T1"
+            area: "Playfield tilt"
+            action: "Measure playfield angle; if too flat, balls may not drain properly."
+          - id: "T2"
+            area: "Ramp angle"
+            action: "Check specific ramp angle where ball got stuck (may be misaligned)."
+          - id: "T3"
+            area: "Part alignment"
+            action: "Verify posts, ramps, and guides are properly aligned (no bent hardware)."
+      flush:
+        checks:
+          - id: "F1"
+            area: "Debris removal"
+            action: "Clean playfield of debris, coins, or broken parts."
+          - id: "F2"
+            area: "Hardware repair"
+            action: "Replace or realign bent/misaligned posts, ramps, or guides."
+          - id: "F3"
+            area: "Playfield angle"
+            action: "Adjust playfield feet so proper tilt is restored (typically 6-7 degrees)."
+    branches:
+      - condition: "ball under ramp/stuck in void"
+        focus:
+          - "Physical obstruction; ramp misalignment."
+      - condition: "ball in drain area unable to exit"
+        focus:
+          - "Drain patency; playfield angle; gravity flow."

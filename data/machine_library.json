@@ -1,0 +1,146 @@
+[
+  {
+    "id": "EM_COMMON",
+    "name": "Electromechanical (1960s-1970s)",
+    "era": "EM",
+    "manufacturer": "Various",
+    "symptoms": [
+      {
+        "symptom": "Unit not resetting after game",
+        "diagnosis": "STRAIGHT: Check play field unit switches for debris or misalignment. TRUE: Inspect reset solenoid coil resistance (should be 10-20 ohms). FLUSH: Verify unit stepping cam and rack mechanism for wear.",
+        "common_causes": ["Stuck unit reset switch", "Weak reset solenoid", "Scoring unit mechanical wear"],
+        "tools_needed": ["Screwdriver set", "Ohmmeter"]
+      },
+      {
+        "symptom": "Playfield lamps not lighting",
+        "diagnosis": "STRAIGHT: Check lamp bulbs and sockets for corrosion. TRUE: Test stepper unit coil continuity; verify 6-12V AC at lamp circuits. FLUSH: Check relay coil for shorts or open circuits.",
+        "common_causes": ["Burnt-out bulb", "Stepper unit failure", "Relay coil open"],
+        "tools_needed": ["Replacement bulbs", "Multimeter", "Relay tester"]
+      },
+      {
+        "symptom": "Slingshot not firing",
+        "diagnosis": "STRAIGHT: Inspect slingshot spring tension and mechanical linkage. TRUE: Check lane switch continuity and solenoid coil (15-30 ohms). FLUSH: Verify relay logic and associated switches.",
+        "common_causes": ["Weak solenoid", "Spring fatigue", "Lane switch failure"],
+        "tools_needed": ["Ohmmeter", "Mechanical tool set"]
+      }
+    ]
+  },
+  {
+    "id": "BALLY_1978_MPU",
+    "name": "Bally MPU (1978-1993)",
+    "era": "Solid State Early",
+    "manufacturer": "Bally",
+    "symptoms": [
+      {
+        "symptom": "LED flash code: Single slow flash",
+        "led_code": "1 flash (0.5s pause)",
+        "diagnosis": "STRAIGHT: Check 5V and 12V power supply voltages. TRUE: Verify ROM checksum in MPU by counting LED flashes. FLUSH: If ROM bad, replace MPU board or burn corrected ROM.",
+        "common_causes": ["ROM checksum failure", "CPU halt condition", "Power supply dropout"],
+        "tools_needed": ["Power supply meter", "MPU replacement or EPROM burner"]
+      },
+      {
+        "symptom": "LED flash code: Double flash",
+        "led_code": "2 flashes (0.5s pause pattern)",
+        "diagnosis": "STRAIGHT: Check RAM circuits on MPU board. TRUE: Verify RAM address/data lines for continuity. FLUSH: Replace RAM chips if faulty.",
+        "common_causes": ["RAM failure", "Memory address bus fault"],
+        "tools_needed": ["Oscilloscope", "RAM replacement"]
+      },
+      {
+        "symptom": "LED flash code: Rapid blinking (4+ flashes)",
+        "led_code": "4+ flashes rapid",
+        "diagnosis": "STRAIGHT: Check all solenoid driver circuits and associated wiring. TRUE: Examine watchdog timer circuit; verify clock oscillator. FLUSH: Replace driver ICs or oscillator crystal.",
+        "common_causes": ["Solenoid driver short", "Clock oscillator failure", "Watchdog reset loop"],
+        "tools_needed": ["Oscilloscope", "IC replacement", "Crystal replacement"]
+      },
+      {
+        "symptom": "No LED activity, blank display",
+        "led_code": "No flash/dark",
+        "diagnosis": "STRAIGHT: Check power supply connections to MPU. TRUE: Verify 5V at U2/U3 IC power pins. FLUSH: Check for shorted capacitors or IC failures.",
+        "common_causes": ["Power supply failure", "Shorted capacitor", "CPU IC failure"],
+        "tools_needed": ["Power supply", "Capacitor replacements", "IC tester"]
+      }
+    ]
+  },
+  {
+    "id": "WILLIAMS_1990S_WPC",
+    "name": "Williams WPC (1989-1999)",
+    "era": "Solid State Modern",
+    "manufacturer": "Williams",
+    "symptoms": [
+      {
+        "symptom": "Fuse blowing on startup",
+        "diagnosis": "STRAIGHT: Check for visible burn marks or solder bridges on power board. TRUE: Measure resistance across power rails; look for short circuits. FLUSH: Replace burned components or power board.",
+        "common_causes": ["Shorted rectifier diode", "Failed capacitor", "Solenoid driver short"],
+        "tools_needed": ["Multimeter", "Power board replacement", "Diode/capacitor kit"]
+      },
+      {
+        "symptom": "Bumpers not firing",
+        "diagnosis": "STRAIGHT: Check bumper switch continuity and cleanliness. TRUE: Verify 10V to bumper solenoid; check driver transistor. FLUSH: Replace solenoid driver or solenoid assembly.",
+        "common_causes": ["Solenoid failure", "Driver transistor open", "Switch contacts dirty"],
+        "tools_needed": ["Multimeter", "Solenoid replacement", "Desoldering iron"]
+      },
+      {
+        "symptom": "Display corrupted or missing segments",
+        "diagnosis": "STRAIGHT: Check display connector pins for corrosion. TRUE: Verify segment driver voltage (4.5-5.5V). FLUSH: Replace display or driver IC.",
+        "common_causes": ["Display failure", "LCD driver IC failure", "Connector corrosion"],
+        "tools_needed": ["Display replacement", "IC replacement", "Cleaning supplies"]
+      }
+    ]
+  },
+  {
+    "id": "WPC_90S",
+    "name": "WPC Era (90s)",
+    "era": "Solid State",
+    "manufacturer": "Williams",
+    "common_fault": "Ground Short Error",
+    "fix": "Check F114 (8 Amp) and F115 (3/4 Amp) fuses.",
+    "symptoms": [
+      {
+        "symptom": "Ground short error on startup",
+        "diagnosis": "STRAIGHT: Inspect power board for visible damage or wet areas. TRUE: Check fuses F114 and F115; verify continuity across ground circuits. FLUSH: Replace damaged power board section or remove problematic solenoid.",
+        "common_causes": ["Wet playfield", "Solenoid wiring insulation worn", "Water damage to PCB"],
+        "tools_needed": ["Fuse replacements", "Continuity tester", "Power board repair kit"]
+      }
+    ]
+  },
+  {
+    "id": "GOTTLIEB_SS",
+    "name": "Gottlieb Solid State (1974-1987)",
+    "era": "Solid State Early",
+    "manufacturer": "Gottlieb",
+    "symptoms": [
+      {
+        "symptom": "Playfield locked up, no activity",
+        "diagnosis": "STRAIGHT: Check if ball is physically stuck; verify tilt mechanism. TRUE: Measure voltage at gate solenoid (8V typical). FLUSH: Replace gate solenoid or check gate switch logic.",
+        "common_causes": ["Ball stuck in gate", "Gate solenoid dead", "Gate switch failure"],
+        "tools_needed": ["Gate solenoid replacement", "Multimeter"]
+      },
+      {
+        "symptom": "Flippers not responding",
+        "diagnosis": "STRAIGHT: Verify flipper button is making contact. TRUE: Check flipper solenoid voltage and resistance. FLUSH: Replace flipper solenoid or EOS switch.",
+        "common_causes": ["Flipper button worn", "Flipper solenoid short", "EOS switch failure"],
+        "tools_needed": ["Button replacement", "Solenoid replacement"]
+      }
+    ]
+  },
+  {
+    "id": "STERN_2000S",
+    "name": "Stern Modern (2000+)",
+    "era": "Digital",
+    "manufacturer": "Stern",
+    "symptoms": [
+      {
+        "symptom": "LCD display blank or off",
+        "diagnosis": "STRAIGHT: Check if LCD backlight is operational (should see glow). TRUE: Verify 12V power to display module; check ribbon cable. FLUSH: Replace LCD assembly or power supply board.",
+        "common_causes": ["Power supply failure", "Backlight burnt out", "Ribbon cable loose"],
+        "tools_needed": ["Power supply meter", "LCD replacement", "Ribbon cable"]
+      },
+      {
+        "symptom": "Game not starting after coin insertion",
+        "diagnosis": "STRAIGHT: Verify coin switch makes audible click. TRUE: Check 5V to coin logic circuit on CPU board; measure switch voltage. FLUSH: Replace coin switch or software update CPU.",
+        "common_causes": ["Coin switch failure", "CPU software glitch", "Logic board issue"],
+        "tools_needed": ["Coin switch replacement", "CPU update tool"]
+      }
+    ]
+  }
+]
