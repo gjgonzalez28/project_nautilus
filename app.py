@@ -114,13 +114,17 @@ def reset_session():
 
 
 if __name__ == '__main__':
+    import os
+    
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') == 'development'
+    
     print("\n" + "="*70)
     print("PROJECT NAUTILUS: FLASK API SERVER")
     print("="*70)
-    print("\nServer starting on http://localhost:5000")
-    print("\nTo expose to ChatGPT, run in another terminal:")
-    print("  ngrok http 5000")
+    print(f"\nServer starting on 0.0.0.0:{port}")
     print("\nEndpoints:")
+    print("  GET / - Chat UI")
     print("  POST /initialize - Start new session")
     print("  POST /ask - Send message to Nautilus")
     print("  POST /set-mode - Set skill level (beginner/intermediate/pro)")
@@ -130,4 +134,4 @@ if __name__ == '__main__':
     print("  GET /health - Health check")
     print("\n" + "="*70 + "\n")
     
-    app.run(debug=True, host='localhost', port=5000)
+    app.run(debug=debug, host='0.0.0.0', port=port)
