@@ -65,6 +65,20 @@ def nautilus_ask(user_message: str) -> Dict[str, Any]:
         "message": user_message,
         "timestamp": time.time()
     })
+
+    # Detect resolution and end cleanly
+    if _is_resolution_message(user_message) and _nautilus_session.session.skill_declared:
+        response = _build_resolution_summary(_nautilus_session.session)
+        _conversation_transcript.append({
+            "role": "assistant",
+            "message": response,
+            "timestamp": time.time()
+        })
+        return {
+            "response": response,
+            "status": "ok",
+            "mode": _nautilus_session.session.mode
+        }
     
     # Use discovery script if machine not yet identified or playfield confirmation pending
     if (not _nautilus_session.session.skill_declared or
@@ -110,12 +124,46 @@ def _strip_debug_tags(response: str) -> str:
             continue
         if line.strip().startswith("[GATE BLOCKED"):
             continue
+        if line.strip().startswith("->"):
+            continue
         
         lines.append(line)
     
     # Join and clean up excess whitespace
     cleaned = "\n".join(lines).strip()
     return cleaned
+
+
+def _is_resolution_message(user_message: str) -> bool:
+    text = (user_message or "").lower().strip()
+    if not text:
+        return False
+
+    negative = ["not fixed", "still broken", "still not working", "not working", "didn't fix", "did not fix"]
+    if any(phrase in text for phrase in negative):
+        return False
+
+    resolved = [
+        "all fixed", "fixed", "resolved", "working now", "its working", "it's working",
+        "solved", "all good", "ok now", "okay now", "thanks, that's all", "thanks thats all"
+    ]
+    return any(phrase in text for phrase in resolved)
+
+
+def _build_resolution_summary(session) -> str:
+    machine = session.machine_title or "your machine"
+    manufacturer = session.manufacturer or ""
+    symptom = session.current_symptom or "the issue"
+
+    if manufacturer:
+        machine_label = f"{machine} ({manufacturer})"
+    else:
+        machine_label = machine
+
+    return (
+        f"Glad it's working now. Quick recap: we were diagnosing {symptom} on {machine_label}. "
+        "If it comes back, start with the simplest physical checks first."
+    )
 
 
 def nautilus_end_session() -> Dict[str, Any]:

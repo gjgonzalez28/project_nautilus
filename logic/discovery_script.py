@@ -39,13 +39,11 @@ class DiscoveryScript:
 
     def _handle_playfield_confirmation(self, user_text):
         text_lower = user_text.lower()
-        yes_tokens = ["yes", "yep", "yeah", "i do", "i know", "i can", "sure"]
+        yes_tokens = [
+            "yes", "yep", "yeah", "i do", "i know", "i can", "sure",
+            "ok", "okay", "done", "ready", "all set", "finished", "i did", "already did"
+        ]
         no_tokens = ["no", "nope", "not yet", "dont", "don't", "do not", "never", "not sure"]
-
-        if any(token in text_lower for token in yes_tokens):
-            self.manager.session.awaiting_playfield_confirmation = False
-            self.manager.session.playfield_access_confirmed = True
-            return "Great. Tell me the symptom you want to troubleshoot."
 
         if any(token in text_lower for token in no_tokens):
             playfield_access = {}
@@ -53,10 +51,7 @@ class DiscoveryScript:
                 playfield_access = self.manager.session.rules["mode"].get("playfield_access", {})
 
             question = self._playfield_question()
-            steps = []
-            steps.extend(playfield_access.get("if_no_lockdown_bar", []))
-            steps.extend(playfield_access.get("if_no_modern_clips", []))
-            steps.extend(playfield_access.get("playfield_lift", []))
+            steps = self._select_playfield_steps(playfield_access)
 
             if steps:
                 step_text = "\n".join([f"- {step}" for step in steps])
@@ -64,8 +59,26 @@ class DiscoveryScript:
 
             return f"{question}\n\nLet me know when you are ready to continue."
 
+        if any(token in text_lower for token in yes_tokens):
+            self.manager.session.awaiting_playfield_confirmation = False
+            self.manager.session.playfield_access_confirmed = True
+            return "Great. Tell me the symptom you want to troubleshoot."
+
         question = self._playfield_question()
         return f"{question} Please answer yes or no."
+
+    def _select_playfield_steps(self, playfield_access):
+        """Pick the correct playfield access steps based on manufacturer."""
+        steps = []
+        manufacturer = (self.manager.session.manufacturer or "").lower()
+
+        if manufacturer == "stern":
+            steps.extend(playfield_access.get("if_no_modern_clips", []))
+        else:
+            steps.extend(playfield_access.get("if_no_lockdown_bar", []))
+
+        steps.extend(playfield_access.get("playfield_lift", []))
+        return steps
 
     def _playfield_question(self):
         playfield_access = {}
@@ -115,25 +128,30 @@ class DiscoveryScript:
             manufacturer_found = mfg_match.capitalize()
             self.collected["manufacturer"] = manufacturer_found
         
-        # Extract machine title: text between manufacturer and skill keywords
+        # Extract machine title: try multiple patterns
         machine_title = self.collected["machine_title"]
-        if not machine_title and mfg_pos >= 0:
-            end_pos = skill_pos if skill_pos >= 0 else len(text_lower)
-            mfg_end_pos = mfg_pos + len(mfg_match)
-            machine_text = text_lower[mfg_end_pos:end_pos].strip()
-
-            if machine_text:
-                separators = [" and ", " or ", " with ", " my ", " the ", " i'm ", " i am ", "i have "]
-                for sep in separators:
-                    if sep in machine_text:
-                        machine_text = machine_text.split(sep)[-1].strip()
-                machine_text = machine_text.strip(" ,-")
-                if machine_text.endswith("pinball machine"):
-                    machine_text = machine_text.replace("pinball machine", "").strip()
-
-                if len(machine_text) >= 2:
-                    machine_title = " ".join([word.capitalize() for word in machine_text.split()])
-                    self.collected["machine_title"] = machine_title
+        if not machine_title:
+            # Remove skill level and manufacturer from text
+            temp_text = text_lower
+            if skill_found:
+                temp_text = temp_text.replace(skill_found, "")
+            if mfg_match:
+                temp_text = temp_text.replace(mfg_match, "")
+            
+            # Clean up separators and filler words
+            for sep in [" and ", " or ", " with ", " my ", " the ", " i'm ", " i am ", " i have ", " have a ", " have an ", " a ", " an ", " by "]:
+                temp_text = temp_text.replace(sep, " ")
+            
+            temp_text = temp_text.strip(" ,-")
+            if temp_text.endswith("pinball machine"):
+                temp_text = temp_text.replace("pinball machine", "").strip()
+            
+            # Remove extra spaces
+            temp_text = " ".join(temp_text.split())
+            
+            if len(temp_text) >= 2:
+                machine_title = " ".join([word.capitalize() for word in temp_text.split()])
+                self.collected["machine_title"] = machine_title
         
         missing_fields = [
             field for field, value in self.collected.items() if not value

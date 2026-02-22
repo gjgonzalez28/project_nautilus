@@ -50,7 +50,7 @@ response_style:
 playfield_access:
   question: "Do you know how to remove the glass and raise the playfield?"
   if_no_lockdown_bar:
-    - "Open the coin door and reach up just inside to release the lockdown bar."
+    - "Open the coin door and pull the lockdown bar release lever."
     - "Remove the lockdown bar, then slide the glass off and place it vertically on a towel or carpet, leaning against a wall or somewhere safe."
   if_no_modern_clips:
     - "Open the coin door and release the two clips to remove the lockdown bar."
