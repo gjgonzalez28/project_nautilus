@@ -1,0 +1,59 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Flask Server",
+            "type": "shell",
+            "command": "python",
+            "args": ["app.py"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Run Tests (All)",
+            "type": "shell",
+            "command": "pytest",
+            "args": ["tests/", "-v"],
+            "problemMatcher": ["$pytest"]
+        },
+        {
+            "label": "Run Unit Tests",
+            "type": "shell",
+            "command": "pytest",
+            "args": ["tests/test_unit/", "-v"]
+        },
+        {
+            "label": "Run Integration Tests",
+            "type": "shell",
+            "command": "pytest",
+            "args": ["tests/test_integration/", "-v"]
+        },
+        {
+            "label": "Validate All Data",
+            "type": "shell",
+            "command": "python",
+            "args": ["tools/validate_all.py"]
+        },
+        {
+            "label": "Inspect Session",
+            "type": "shell",
+            "command": "python",
+            "args": ["tools/inspect_session.py"]
+        },
+        {
+            "label": "Replay Conversation",
+            "type": "shell",
+            "command": "python",
+            "args": ["tools/replay_conversation.py"]
+        },
+        {
+            "label": "Run Tests with Coverage",
+            "type": "shell",
+            "command": "pytest",
+            "args": ["tests/", "--cov=logic", "--cov=nemo", "--cov-report=html"]
+        }
+    ]
+}
