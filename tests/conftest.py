@@ -50,7 +50,7 @@ def test_data_dir():
 @pytest.fixture(autouse=True)
 def reset_logging():
     """Reset logging state between tests."""
-    from logging.logger import get_logger
+    from app_logging.logger import get_logger
     logger = get_logger(__name__)
     logger.set_trace_id()
     yield

@@ -78,7 +78,7 @@ class TestSymptomMaps:
         for symptom_id, symptom_data in maps["symptom_maps"].items():
             assert "stf" in symptom_data, f"{symptom_id} missing STF structure"
             assert "straight" in symptom_data["stf"]
-            assert "true" in symptom_data["stf"]
+            assert True in symptom_data["stf"], f"{symptom_id} missing True (YAML true:) stage"
             assert "flush" in symptom_data["stf"]
     
     def test_symptom_checks_have_required_fields(self, data_dir):
@@ -87,7 +87,7 @@ class TestSymptomMaps:
             maps = yaml.safe_load(f)
         
         for symptom_id, symptom_data in maps["symptom_maps"].items():
-            for stage in ["straight", "true", "flush"]:
+            for stage in ["straight", True, "flush"]:  # True is YAML 'true:' parsed as boolean
                 checks = symptom_data["stf"][stage].get("checks", [])
                 for check in checks:
                     assert "id" in check, f"{symptom_id}/{stage} check missing id"

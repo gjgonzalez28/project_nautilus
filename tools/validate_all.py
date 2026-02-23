@@ -16,7 +16,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from logging.logger import setup_logging, get_logger
+from app_logging.logger import setup_logging, get_logger
 
 logger = get_logger(__name__)
 
@@ -68,8 +68,7 @@ def validate_python_imports():
         "logic.manager",
         "logic.discovery_script",
         "logic.nautilus_core",
-        "chatgpt_integration",
-        "logging.logger"
+        "app_logging.logger"
     ]
     
     errors = []
@@ -89,8 +88,6 @@ def validate_required_files():
     print("\n[VALIDATE] Required Files...")
     required_files = [
         "README.md",
-        "app.py",
-        "main.py",
         "rules/global.yaml",
         "rules/beginner.yaml",
         "rules/intermediate.yaml",

@@ -5,7 +5,7 @@ Provides centralized logging with trace ID correlation across all components.
 Every log entry is JSON for easy parsing and analysis.
 
 Usage:
-    from logging.logger import get_logger
+    from app_logging.logger import get_logger
     logger = get_logger(__name__)
     
     logger.log_event("flow_transition", {
