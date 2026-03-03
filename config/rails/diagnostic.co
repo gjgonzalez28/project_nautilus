@@ -1,0 +1,206 @@
+"""
+Project Nautilus: Diagnostic Reasoning Flow (Colang 2.0)
+
+Generates diagnostic troubleshooting steps based on captured symptom.
+Uses LLM to reason through potential causes and solutions.
+Works with NeMo variables from discovery and symptom flows:
+  - $machine_name, $manufacturer, $era, $skill_level (from discovery)
+  - $symptom_description, $symptom_category, $additional_details (from symptom_capture)
+
+Sets new variables:
+  - $diagnostic_steps (list of troubleshooting steps)
+  - $diagnostic_confidence (0.0-1.0 confidence score)
+  - $safety_warnings (list of safety messages)
+"""
+
+# Main diagnostic reasoning flow
+flow diagnostic_reasoning
+    # Generate diagnostic steps using LLM
+    bot say "Let me analyze this issue and generate some diagnostic steps for you..."
+    
+    $machine_info = {
+        "name": $machine_name,
+        "manufacturer": $manufacturer,
+        "era": $era
+    }
+    
+    $diagnostic_result = await GenerateDiagnosticStepsAction(
+        symptom=$symptom_description,
+        category=$symptom_category,
+        machine_info=$machine_info,
+        skill_level=$skill_level,
+        additional_details=$additional_details
+    )
+    
+    # Extract results
+    $diagnostic_steps = $diagnostic_result.steps
+    $diagnostic_confidence = $diagnostic_result.confidence
+    $safety_warnings = $diagnostic_result.safety_warnings
+    $estimated_time = $diagnostic_result.estimated_time
+    $needs_manual = $diagnostic_result.needs_manual
+    
+    # Evaluate safety gates
+    $safety_eval = await EvaluateSafetyGatesAction(
+        diagnostic_steps=$diagnostic_steps,
+        machine_era=$era,
+        skill_level=$skill_level
+    )
+    
+    # Check if work is safe for user's skill level
+    if not $safety_eval.safe
+        # High risk - recommend professional
+        await safety_block_flow
+    else
+        # Check if playfield access needed (beginners only)
+        $playfield_check = await DetectPlayfieldAccessAction(
+            diagnostic_steps=$diagnostic_steps,
+            machine_info=$machine_info,
+            skill_level=$skill_level
+        )
+        
+        if $playfield_check.show_instructions
+            await playfield_access_gate
+        
+        # Check if steps require manual/photo (location gate)
+        if $needs_manual
+            await manual_location_gate
+        
+        # Present diagnostic steps
+        await present_diagnostic_steps
+    
+    # Diagnostic complete
+    bot say "Would you like me to walk through these steps with you, or do you have any questions?"
+
+
+# Sub-flow: Present diagnostic steps to user
+flow present_diagnostic_steps
+    # Show safety warnings first (if any exist, they'll be displayed by the bot)
+    bot say "⚠️ Safety check complete. Proceeding with diagnostic steps..."
+    
+    # Show estimated time
+    bot say "Estimated time: {$estimated_time}"
+    
+    # Show diagnostic steps as a formatted message
+    bot say "Here are the diagnostic steps I recommend. I'll present them one at a time to guide you through the process."
+    
+    # Note: Individual step display would be handled by the web interface
+    # For now, we'll provide the steps as a complete message
+    bot say "Review the diagnostic steps and let me know if you have questions about any of them."
+
+
+# Sub-flow: Safety block for high-risk repairs
+flow safety_block_flow
+    bot say "⚠️ SAFETY ALERT ⚠️"
+    bot say "This repair involves procedures that could be dangerous without proper training and equipment."
+    
+    bot say "Based on the diagnostic analysis, this work may involve:"
+    bot say "- High voltage components"
+    bot say "- Risk of electrical shock"
+    bot say "- Specialized tools or knowledge required"
+    
+    bot say "\nFor your safety, I strongly recommend:"
+    bot say "1. Consult with a professional pinball technician"
+    bot say "2. Contact a local pinball repair service"
+    bot say "3. Join a pinball repair community for guidance"
+    
+    bot say "\nIf you still want to see the diagnostic steps (at your own risk), type 'show steps anyway'."
+    
+    $user_response = await user said something
+    
+    if "show" in $user_response and "steps" in $user_response
+        bot say "Proceeding at your own risk..."
+        await present_diagnostic_steps
+    else
+        bot say "Good choice. Stay safe, and good luck with your machine!"
+
+
+# Sub-flow: Manual/photo location gate
+# Triggers when diagnostic steps require specific technical details
+# (fuse numbers, connector IDs, test points, voltages at specific locations)
+flow manual_location_gate
+    bot say "📖 DOCUMENTATION REQUIRED"
+    
+    bot say "The diagnostic steps ahead involve specific technical details:"
+    bot say "- Exact fuse numbers, connector IDs, or test point locations"
+    bot say "- Board-specific component identifiers"
+    bot say "- Pinouts or voltage readings at specific points"
+    
+    bot say "\nTo give you accurate, machine-specific guidance, I need ONE of the following:"
+    bot say "1️⃣ Upload the service manual for your machine (I'll find the relevant sections)"
+    bot say "2️⃣ Upload a clear photo of the board area in question"
+    bot say "3️⃣ Continue without documentation (I'll provide general steps with verification guidance)"
+    
+    bot say "\n📋 IMPORTANT COPYRIGHT NOTE:"
+    bot say "I cannot store or distribute copyrighted service manuals."
+    bot say "If you need a manual, check IPDB.org for your specific machine."
+    bot say "Any documents you upload will only be used for this session and discarded afterward."
+    
+    bot say "\nWhat would you like to do?"
+    bot say "Type: 'upload manual', 'upload photo', or 'continue without documentation'"
+    
+    $user_choice = await user said something
+    
+    # Check for manual upload
+    if "upload" in $user_choice and "manual" in $user_choice
+        bot say "Great! Please upload the service manual."
+        bot say "I'll search through it to find the relevant sections and provide precise guidance."
+        # TODO: Implement manual upload handling and RAG
+        $has_documentation = True
+    
+    else if "upload" in $user_choice and "document" in $user_choice
+        bot say "Great! Please upload the service manual."
+        bot say "I'll search through it to find the relevant sections and provide precise guidance."
+        # TODO: Implement manual upload handling and RAG
+        $has_documentation = True
+        
+    else if "upload" in $user_choice and "photo" in $user_choice
+        bot say "Perfect! Please upload a clear photo of the board area."
+        bot say "Make sure component labels are readable if possible."
+        # TODO: Implement photo upload handling and visual analysis
+        $has_documentation = True
+        
+    else
+        # Continue without documentation - use verification approach
+        bot say "Understood. I'll provide general diagnostic guidance."
+        bot say "⚠️ Since I don't have your specific board layout, I'll include verification steps."
+        bot say "You'll need to visually confirm component locations before testing."
+        $has_documentation = False
+
+
+# Sub-flow: Playfield access gate (beginners guide)
+# Triggers when diagnostic steps require accessing under the playfield
+# Only shown to beginners who may not know the process
+flow playfield_access_gate
+    bot say "The next steps require accessing the playfield."
+    bot say "Do you know how to remove the glass and raise the playfield?"
+    bot say "Type 'yes' if you know how, or 'no' if you need guidance."
+    
+    $user_response = await user said something
+    
+    if "no" in $user_response or "dont" in $user_response or "don't" in $user_response or "not sure" in $user_response
+        # Show instructions based on lockdown bar type
+        if $playfield_check.lockdown_bar_type == "clips"
+            bot say "Here's how to access your playfield:"
+            bot say "1. Open the coin door and reach into the cabinet on both the left and right side."
+            bot say "2. You'll find clips that need to be released to remove the lockdown bar."
+            bot say "3. Once released, remove the lockdown bar, then slide the glass off."
+            bot say "4. Place the glass VERTICALLY on a towel or carpet, leaning against a wall or somewhere safe."
+            bot say "\nTo raise the playfield:"
+            bot say "1. First, remove the balls from your machine."
+            bot say "2. Grab the playfield by the apron and lift slightly."
+            bot say "3. Slide the playfield towards you and then raise it up."
+            bot say "4. There should be a built-in metal bar to keep the playfield propped up."
+        else
+            bot say "Here's how to access your playfield:"
+            bot say "1. Open the coin door and pull the lockdown bar release lever (usually around the middle)."
+            bot say "2. Remove the lockdown bar, then slide the glass off."
+            bot say "3. Place the glass VERTICALLY on a towel or carpet, leaning against a wall or somewhere safe."
+            bot say "\nTo raise the playfield:"
+            bot say "1. First, remove the balls from your machine."
+            bot say "2. Grab the playfield by the apron and lift slightly."
+            bot say "3. Slide the playfield towards you and then raise it up."
+            bot say "4. There should be a built-in metal bar to keep the playfield propped up."
+        
+        bot say "\nReady to proceed with the diagnostic steps?"
+    else
+        bot say "Great! Let's continue with the diagnostic steps."

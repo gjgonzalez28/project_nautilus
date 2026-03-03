@@ -1,0 +1,48 @@
+"""
+Project Nautilus: Discovery Flow (Colang 2.0)
+
+Extract machine identity and user skill level.
+Sets NeMo variables:
+  - $machine_name (user's description)
+  - $manufacturer (from library match)
+  - $era (from library match)
+  - $skill_level (beginner, intermediate, pro)
+
+Correct Colang 2.0 syntax per official documentation.
+"""
+
+import core
+
+# Main discovery flow
+flow discovery
+    # Machine and skill level identification - ask for everything at once
+    
+    bot say "Sure, I can help you with that. But first I need to know the title of your machine, the manufacturer and model if appropriate, and your skill level."
+    
+    # Get user's response with all info
+    $user_response = await user said something
+    
+    # Parse machine and skill level from single response
+    $parse_result = await ParseMachineAndSkillAction(user_input=$user_response)
+    
+    # Extract parsed data
+    $machine_name = $parse_result.machine_name
+    $manufacturer = $parse_result.manufacturer
+    $era = $parse_result.era
+    $skill_level = $parse_result.skill_level
+    $needs_clarification = $parse_result.needs_clarification
+    
+    # Check if we need model clarification (Premium vs LE vs Pro, etc.)
+    if $needs_clarification
+        bot say $parse_result.clarification_question
+        $clarification = await user said something
+        # Update machine name with specific model
+        $machine_name = "{$machine_name} {$clarification}"
+    
+    # Fallback if skill level not detected
+    if not $skill_level
+        $skill_level = "beginner"
+        bot say "I'll assume you're new to pinball machine repair and provide beginner-friendly guidance."
+    
+    # Identity gate complete
+    bot say "Perfect! I'm ready to help you diagnose issues with your {$machine_name}."

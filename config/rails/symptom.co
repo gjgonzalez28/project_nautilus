@@ -1,0 +1,70 @@
+"""
+Project Nautilus: Symptom Capture Flow (Colang 2.0)
+
+Captures user's pinball machine symptom/issue.
+Sets NeMo variables:
+  - $symptom_description (user's description)
+  - $symptom_category (mapped category: flipper, bumper, lights, etc.)
+  - $symptom_matched (True if fuzzy matched to known issue)
+  - $additional_details (list of observations)
+
+This flow runs after discovery flow completes.
+"""
+
+# Main symptom capture flow
+flow symptom_capture
+    # Ask for symptom
+    bot say "What issue are you experiencing with your machine?"
+    
+    # Capture user's symptom description
+    $symptom_description = await user said something
+    
+    # Fuzzy match against known symptoms
+    $match_result = await FuzzyMatchSymptomAction(
+        symptom_input=$symptom_description,
+        machine_id=$machine_name
+    )
+    
+    # Check if we matched a known symptom
+    if $match_result.matched
+        $symptom_category = $match_result.category
+        $symptom_matched = True
+        bot say "Got it - sounds like a {$symptom_category} issue. Let me gather a few more details."
+    else
+        $symptom_matched = False
+        bot say "I understand. Let me gather some diagnostic information about this issue."
+    
+    # Ask follow-up questions
+    await gather_symptom_details
+    
+    # Confirm symptom captured
+    bot say "Thanks! I have enough information to start diagnosing the issue."
+
+
+# Sub-flow: Gather additional symptom details
+flow gather_symptom_details
+    # Ask about when the problem occurs
+    bot say "When does this problem happen? (e.g., always, intermittently, only when cold/hot)"
+    $timing = await user said something
+    
+    # Ask about what the user has tried
+    bot say "Have you tried anything to fix this already?"
+    $attempted_fixes = await user said something
+    
+    # Ask if there are any other related issues
+    bot say "Are there any other problems happening at the same time?"
+    $related_issues = await user said something
+    
+    # Store all details in a dictionary
+    $additional_details = {
+        "timing": $timing,
+        "attempted_fixes": $attempted_fixes,
+        "related_issues": $related_issues
+    }
+    
+    # Log symptom details
+    await LogSymptomDetailsAction(
+        symptom=$symptom_description,
+        category=$symptom_category,
+        details=$additional_details
+    )

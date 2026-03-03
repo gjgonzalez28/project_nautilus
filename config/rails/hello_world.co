@@ -1,0 +1,37 @@
+"""
+Project Nautilus: Main Entry Flow
+
+Orchestrates complete diagnostic session:
+1. Discovery: Machine and skill level identification
+2. Symptom Capture: Issue description and details
+3. Diagnostic Reasoning: Generate troubleshooting steps
+4. Safety Validation: Ensure user safety
+"""
+
+# Main dialog flow - entry point for all diagnostic sessions
+flow main
+    # Wait for user's first message
+    $input = await user said something
+    
+    # Check if user is asking for help with a machine
+    if "pinball" in $input or "machine" in $input or "help" in $input or "fix" in $input or "repair" in $input or "diagnos" in $input or "flipper" in $input or "bumper" in $input or "coil" in $input or "lights" in $input or "display" in $input or "score" in $input or "switch" in $input or "slingshot" in $input or "pop" in $input or "kicker" in $input
+        # Start complete diagnostic session
+        await diagnostic_session
+    else
+        # Echo for testing
+        bot say "You said: {$input}. Try saying 'I need help with my pinball machine' to start a diagnostic session."
+
+
+# Complete diagnostic session flow
+flow diagnostic_session
+    # Phase 1: Discovery (machine & skill identification)
+    await discovery
+    
+    # Phase 2: Symptom capture
+    await symptom_capture
+    
+    # Phase 3: Diagnostic reasoning & safety validation
+    await diagnostic_reasoning
+    
+    # Session complete
+    bot say "\nDiagnostic session complete! Feel free to start a new session if you have other issues to diagnose."
