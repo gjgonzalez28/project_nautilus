@@ -119,6 +119,20 @@ sessions = {}
 # Flask Routes
 # ============================================================================
 
+@app.route('/', methods=['GET'])
+def index():
+    """Root endpoint with API overview"""
+    return jsonify({
+        "service": "Project Nautilus API",
+        "status": "running",
+        "available_endpoints": [
+            "GET  /health",
+            "POST /diagnose",
+            "GET  /session/<trace_id>",
+            "DELETE /session/<trace_id>"
+        ]
+    }), 200
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
