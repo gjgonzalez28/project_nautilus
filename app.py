@@ -43,6 +43,11 @@ logger = StructuredLogger(__name__)
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
+# Runtime API key storage (can be set via /api/set-key endpoint)
+runtime_config = {
+    "openai_api_key": os.getenv('OPENAI_API_KEY')
+}
+
 
 # ============================================================================
 # NeMo Guardrails Initialization
@@ -56,6 +61,10 @@ def initialize_nemo():
         LLMRails instance or None if initialization fails
     """
     try:
+        # Use runtime API key if provided, otherwise fall back to environment
+        if runtime_config.get("openai_api_key"):
+            os.environ['OPENAI_API_KEY'] = runtime_config["openai_api_key"]
+        
         nemo_config_path = os.getenv('NEMO_CONFIG_PATH', './config/rails')
         
         logger.log_event(
@@ -122,7 +131,7 @@ sessions = {}
 @app.route('/', methods=['GET'])
 def index():
     """Root endpoint with chat-style web UI"""
-    html = """
+    html = r"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -156,6 +165,102 @@ def index():
                 padding: 20px;
                 text-align: center;
                 border-bottom: 1px solid #e0e0e0;
+                position: relative;
+            }
+            .settings-btn {
+                position: absolute;
+                right: 20px;
+                top: 20px;
+                background: rgba(255,255,255,0.2);
+                color: white;
+                border: 1px solid rgba(255,255,255,0.3);
+                padding: 8px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: background 0.2s;
+            }
+            .settings-btn:hover {
+                background: rgba(255,255,255,0.3);
+            }
+            .modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+            }
+            .modal.open {
+                display: flex;
+            }
+            .modal-content {
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                max-width: 500px;
+                width: 100%;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+            .modal-header {
+                font-size: 20px;
+                font-weight: 600;
+                margin-bottom: 20px;
+                color: #333;
+            }
+            .modal-field {
+                margin-bottom: 20px;
+            }
+            .modal-label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: #333;
+                font-size: 14px;
+            }
+            .modal-input {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 13px;
+                font-family: monospace;
+            }
+            .modal-input:focus {
+                outline: none;
+                border-color: #667eea;
+            }
+            .modal-buttons {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+            }
+            .modal-btn {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 13px;
+                transition: opacity 0.2s;
+            }
+            .modal-btn-save {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            .modal-btn-save:hover {
+                opacity: 0.9;
+            }
+            .modal-btn-cancel {
+                background: #f0f0f0;
+                color: #333;
+            }
+            .modal-btn-cancel:hover {
+                background: #e0e0e0;
             }
             .chat-header h1 {
                 font-size: 24px;
@@ -294,6 +399,7 @@ def index():
     <body>
         <div class="chat-container">
             <div class="chat-header">
+                <button class="settings-btn" id="settingsBtn">⚙️ Settings</button>
                 <h1>🚀 Project Nautilus</h1>
                 <div class="chat-status">
                     <div class="status-dot"></div>
@@ -318,6 +424,23 @@ def index():
             </div>
         </div>
         
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">Configure API Key</div>
+                <div class="modal-field">
+                    <label class="modal-label">OpenAI API Key (sk-...)</label>
+                    <input type="password" class="modal-input" id="apiKeyInput" placeholder="Paste your OpenAI API key here">
+                </div>
+                <div style="margin-bottom: 20px; font-size: 12px; color: #666;">
+                    Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: #667eea;">OpenAI Platform</a>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-cancel" id="cancelBtn">Cancel</button>
+                    <button class="modal-btn modal-btn-save" id="saveBtn">Save & Initialize</button>
+                </div>
+            </div>
+        </div>
+        
         <script>
             const form = document.getElementById('chatForm');
             const input = document.getElementById('messageInput');
@@ -331,8 +454,8 @@ def index():
                     container.innerHTML = '';
                 }
                 const msg = document.createElement('div');
-                msg.className = \`message \${sender}\${isError ? ' error' : ''}\`;
-                msg.innerHTML = \`<div class="message-bubble">\${escapeHtml(text)}</div>\`;
+                msg.className = 'message ' + sender + (isError ? ' error' : '');
+                msg.innerHTML = '<div class="message-bubble">' + escapeHtml(text) + '</div>';
                 container.appendChild(msg);
                 container.scrollTop = container.scrollHeight;
             }
@@ -392,11 +515,11 @@ def index():
                         sessionId = data.trace_id;
                     } else {
                         const error = data.details || data.error || 'Unknown error';
-                        addMessage(\`Error: \${error}\`, 'assistant', true);
+                        addMessage('Error: ' + error, 'assistant', true);
                     }
                 } catch (err) {
                     removeLoadingMessage();
-                    addMessage(\`Network error: \${err.message}\`, 'assistant', true);
+                    addMessage('Network error: ' + err.message, 'assistant', true);
                 } finally {
                     isLoading = false;
                     sendBtn.disabled = false;
@@ -420,6 +543,50 @@ def health():
         "phase": "Phase 2: NeMo Setup",
         "nemo_status": "loaded" if nemo_rails else "failed"
     }), 200
+
+
+@app.route('/api/set-key', methods=['POST'])
+def set_api_key():
+    """
+    Set OpenAI API key at runtime.
+    
+    Accepts:
+    {
+        "api_key": "sk-..."
+    }
+    """
+    global nemo_rails
+    
+    try:
+        data = request.get_json() or {}
+        api_key = data.get('api_key', '').strip()
+        
+        if not api_key:
+            return jsonify({"error": "API key required"}), 400
+        
+        # Store the key
+        runtime_config['openai_api_key'] = api_key
+        os.environ['OPENAI_API_KEY'] = api_key
+        
+        # Reinitialize NeMo with the new key
+        nemo_rails = initialize_nemo()
+        
+        if nemo_rails:
+            return jsonify({
+                "status": "success",
+                "message": "API key configured and NeMo initialized"
+            }), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "API key set but NeMo initialization failed. Check logs for details."
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 
 @app.route('/diagnose', methods=['POST'])
