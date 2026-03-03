@@ -29,8 +29,34 @@ from logic.discovery_helper import validate_skill_level as validate_skill_helper
 
 logger = StructuredLogger(__name__)
 
-# Initialize AsyncOpenAI client
-_openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# ============================================================================
+# Lazy OpenAI Client Initialization
+# ============================================================================
+
+def _get_openai_client() -> AsyncOpenAI:
+    """
+    Get or create AsyncOpenAI client lazily.
+    
+    This function initializes the OpenAI client only when it's actually needed,
+    rather than at module import time. This allows actions.py to import
+    successfully even if OPENAI_API_KEY is not yet set.
+    
+    Returns:
+        AsyncOpenAI instance
+    
+    Raises:
+        ValueError if OPENAI_API_KEY is not set
+    """
+    if not hasattr(_get_openai_client, '_client'):
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "OPENAI_API_KEY environment variable not set. "
+                "Set it before calling diagnostic actions."
+            )
+        _get_openai_client._client = AsyncOpenAI(api_key=api_key)
+    return _get_openai_client._client
 
 
 # ============================================================================
@@ -282,8 +308,9 @@ Generate diagnostic troubleshooting steps for this user. Follow these rules:
 Generate the diagnostic steps now:"""
 
     try:
-        response = await _openai_client.chat.completions.create(
-            model="gpt-5.2",
+        openai_client = _get_openai_client()
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
