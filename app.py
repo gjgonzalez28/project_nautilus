@@ -121,17 +121,241 @@ sessions = {}
 
 @app.route('/', methods=['GET'])
 def index():
-    """Root endpoint with API overview"""
-    return jsonify({
-        "service": "Project Nautilus API",
-        "status": "running",
-        "available_endpoints": [
-            "GET  /health",
-            "POST /diagnose",
-            "GET  /session/<trace_id>",
-            "DELETE /session/<trace_id>"
-        ]
-    }), 200
+    """Root endpoint with web UI for testing"""
+    html = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Project Nautilus</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .container {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                max-width: 600px;
+                width: 100%;
+                padding: 40px;
+            }
+            h1 {
+                color: #333;
+                margin-bottom: 10px;
+                font-size: 28px;
+            }
+            .status {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 30px;
+                font-size: 14px;
+            }
+            .status-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #4ade80;
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+            .form-group {
+                margin-bottom: 20px;
+            }
+            label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: #333;
+            }
+            input, textarea {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 14px;
+                font-family: inherit;
+                transition: border-color 0.2s;
+            }
+            input:focus, textarea:focus {
+                outline: none;
+                border-color: #667eea;
+            }
+            textarea {
+                resize: vertical;
+                min-height: 100px;
+            }
+            button {
+                width: 100%;
+                padding: 12px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: transform 0.2s, box-shadow 0.2s;
+                font-size: 14px;
+            }
+            button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(102,126,234,0.3);
+            }
+            button:active {
+                transform: translateY(0);
+            }
+            button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            .response-section {
+                margin-top: 30px;
+                display: none;
+            }
+            .response-section.show {
+                display: block;
+            }
+            .response-header {
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 12px;
+            }
+            .response-box {
+                background: #f5f5f5;
+                border-left: 4px solid #667eea;
+                padding: 16px;
+                border-radius: 6px;
+                font-family: 'Courier New', monospace;
+                font-size: 13px;
+                line-height: 1.5;
+                white-space: pre-wrap;
+                word-break: break-word;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            .error {
+                border-left-color: #ef4444;
+                background: #fef2f2;
+            }
+            .loading {
+                text-align: center;
+                padding: 20px;
+                color: #667eea;
+            }
+            .spinner {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                border: 2px solid #667eea;
+                border-top-color: transparent;
+                border-radius: 50%;
+                animation: spin 0.6s linear infinite;
+            }
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Project Nautilus</h1>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span>API Status: <strong>Running</strong></span>
+            </div>
+            
+            <form id="diagnoseForm">
+                <div class="form-group">
+                    <label for="message">Diagnostic Message</label>
+                    <textarea id="message" name="message" placeholder="Describe your issue..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="traceId">Session ID (optional)</label>
+                    <input type="text" id="traceId" name="traceId" placeholder="Leave blank for new session">
+                </div>
+                
+                <button type="submit" id="submitBtn">Send Message</button>
+            </form>
+            
+            <div id="responseSection" class="response-section">
+                <div class="response-header">Response:</div>
+                <div id="responseBox" class="response-box"></div>
+            </div>
+        </div>
+        
+        <script>
+            const form = document.getElementById('diagnoseForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const responseSection = document.getElementById('responseSection');
+            const responseBox = document.getElementById('responseBox');
+            const messageInput = document.getElementById('message');
+            const traceIdInput = document.getElementById('traceId');
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const message = messageInput.value.trim();
+                const traceId = traceIdInput.value.trim();
+                
+                if (!message) {
+                    alert('Please enter a message');
+                    return;
+                }
+                
+                submitBtn.disabled = true;
+                responseBox.innerHTML = '<div class="loading"><div class="spinner"></div> Processing...</div>';
+                responseSection.classList.add('show');
+                
+                try {
+                    const payload = { message };
+                    if (traceId) payload.trace_id = traceId;
+                    
+                    const response = await fetch('/diagnose', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        const formatted = `Response:\\n${data.response}\\n\\nTrace ID: ${data.trace_id}\\nTurn: ${data.turn}`;
+                        responseBox.textContent = formatted;
+                        responseBox.classList.remove('error');
+                        
+                        // Update trace ID for next message
+                        traceIdInput.value = data.trace_id;
+                    } else {
+                        const error = data.error || 'Unknown error';
+                        const details = data.details ? `\\nDetails: ${data.details}` : '';
+                        responseBox.textContent = `Error: ${error}${details}`;
+                        responseBox.classList.add('error');
+                    }
+                } catch (err) {
+                    responseBox.textContent = `Network Error: ${err.message}`;
+                    responseBox.classList.add('error');
+                } finally {
+                    submitBtn.disabled = false;
+                }
+            });
+        </script>
+    </body>
+    </html>
+    """
+    return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 @app.route('/health', methods=['GET'])
 def health():
