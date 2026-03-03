@@ -121,14 +121,14 @@ sessions = {}
 
 @app.route('/', methods=['GET'])
 def index():
-    """Root endpoint with web UI for testing"""
+    """Root endpoint with chat-style web UI"""
     html = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Project Nautilus</title>
+        <title>Project Nautilus - Diagnostic Assistant</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
@@ -136,52 +136,121 @@ def index():
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 min-height: 100vh;
                 display: flex;
-                align-items: center;
-                justify-content: center;
                 padding: 20px;
             }
-            .container {
+            .chat-container {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                max-width: 800px;
+                margin: auto;
                 background: white;
                 border-radius: 12px;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                max-width: 600px;
-                width: 100%;
-                padding: 40px;
+                height: 85vh;
+                overflow: hidden;
             }
-            h1 {
-                color: #333;
-                margin-bottom: 10px;
-                font-size: 28px;
+            .chat-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px;
+                text-align: center;
+                border-bottom: 1px solid #e0e0e0;
             }
-            .status {
+            .chat-header h1 {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+            .chat-status {
+                font-size: 12px;
+                opacity: 0.9;
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: 8px;
-                margin-bottom: 30px;
-                font-size: 14px;
             }
             .status-dot {
-                width: 12px;
-                height: 12px;
+                width: 8px;
+                height: 8px;
                 border-radius: 50%;
                 background: #4ade80;
                 animation: pulse 2s infinite;
             }
             @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.5; }
+                0%, 100% { opacity: 1; } 50% { opacity: 0.5; }
             }
-            .form-group {
-                margin-bottom: 20px;
+            .messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
             }
-            label {
-                display: block;
-                font-weight: 600;
-                margin-bottom: 8px;
+            .message {
+                display: flex;
+                gap: 12px;
+                animation: slideIn 0.3s ease-out;
+            }
+            @keyframes slideIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .message.user {
+                justify-content: flex-end;
+            }
+            .message-bubble {
+                max-width: 65%;
+                padding: 12px 16px;
+                border-radius: 12px;
+                line-height: 1.4;
+                font-size: 14px;
+                word-wrap: break-word;
+            }
+            .user .message-bubble {
+                background: #667eea;
+                color: white;
+                border-bottom-right-radius: 4px;
+            }
+            .assistant .message-bubble {
+                background: #f0f0f0;
                 color: #333;
+                border-bottom-left-radius: 4px;
             }
-            input, textarea {
-                width: 100%;
+            .error .message-bubble {
+                background: #fef2f2;
+                color: #dc2626;
+                border-left: 3px solid #dc2626;
+            }
+            .loading {
+                display: flex;
+                gap: 4px;
+                align-items: center;
+            }
+            .loading-dot {
+                width: 8px;
+                height: 8px;
+                background: #667eea;
+                border-radius: 50%;
+                animation: bounce 1.4s infinite;
+            }
+            .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+            .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+            @keyframes bounce {
+                0%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(-10px); }
+            }
+            .input-area {
+                border-top: 1px solid #e0e0e0;
+                padding: 16px;
+                background: #fafafa;
+            }
+            .input-form {
+                display: flex;
+                gap: 12px;
+            }
+            input {
+                flex: 1;
                 padding: 12px;
                 border: 1px solid #ddd;
                 border-radius: 6px;
@@ -189,17 +258,12 @@ def index():
                 font-family: inherit;
                 transition: border-color 0.2s;
             }
-            input:focus, textarea:focus {
+            input:focus {
                 outline: none;
                 border-color: #667eea;
             }
-            textarea {
-                resize: vertical;
-                min-height: 100px;
-            }
             button {
-                width: 100%;
-                padding: 12px;
+                padding: 12px 24px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 border: none;
@@ -207,121 +271,112 @@ def index():
                 font-weight: 600;
                 cursor: pointer;
                 transition: transform 0.2s, box-shadow 0.2s;
-                font-size: 14px;
             }
-            button:hover {
+            button:hover:not(:disabled) {
                 transform: translateY(-2px);
                 box-shadow: 0 10px 20px rgba(102,126,234,0.3);
-            }
-            button:active {
-                transform: translateY(0);
             }
             button:disabled {
                 opacity: 0.6;
                 cursor: not-allowed;
             }
-            .response-section {
-                margin-top: 30px;
-                display: none;
-            }
-            .response-section.show {
-                display: block;
-            }
-            .response-header {
-                font-weight: 600;
-                color: #333;
-                margin-bottom: 12px;
-            }
-            .response-box {
-                background: #f5f5f5;
-                border-left: 4px solid #667eea;
-                padding: 16px;
-                border-radius: 6px;
-                font-family: 'Courier New', monospace;
-                font-size: 13px;
-                line-height: 1.5;
-                white-space: pre-wrap;
-                word-break: break-word;
-                max-height: 300px;
-                overflow-y: auto;
-            }
-            .error {
-                border-left-color: #ef4444;
-                background: #fef2f2;
-            }
-            .loading {
+            .empty-state {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: #999;
                 text-align: center;
                 padding: 20px;
-                color: #667eea;
-            }
-            .spinner {
-                display: inline-block;
-                width: 16px;
-                height: 16px;
-                border: 2px solid #667eea;
-                border-top-color: transparent;
-                border-radius: 50%;
-                animation: spin 0.6s linear infinite;
-            }
-            @keyframes spin {
-                to { transform: rotate(360deg); }
             }
         </style>
     </head>
     <body>
-        <div class="container">
-            <h1>🚀 Project Nautilus</h1>
-            <div class="status">
-                <div class="status-dot"></div>
-                <span>API Status: <strong>Running</strong></span>
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>🚀 Project Nautilus</h1>
+                <div class="chat-status">
+                    <div class="status-dot"></div>
+                    Diagnostic Assistant
+                </div>
             </div>
             
-            <form id="diagnoseForm">
-                <div class="form-group">
-                    <label for="message">Diagnostic Message</label>
-                    <textarea id="message" name="message" placeholder="Describe your issue..." required></textarea>
+            <div class="messages" id="messagesContainer">
+                <div class="empty-state">
+                    <div>
+                        <p style="margin-bottom: 10px;">Welcome to Project Nautilus</p>
+                        <p style="font-size: 12px; color: #bbb;">Describe your issue and I'll help diagnose it</p>
+                    </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="traceId">Session ID (optional)</label>
-                    <input type="text" id="traceId" name="traceId" placeholder="Leave blank for new session">
-                </div>
-                
-                <button type="submit" id="submitBtn">Send Message</button>
-            </form>
+            </div>
             
-            <div id="responseSection" class="response-section">
-                <div class="response-header">Response:</div>
-                <div id="responseBox" class="response-box"></div>
+            <div class="input-area">
+                <form class="input-form" id="chatForm">
+                    <input type="text" id="messageInput" placeholder="Describe your issue..." required autocomplete="off">
+                    <button type="submit" id="sendBtn">Send</button>
+                </form>
             </div>
         </div>
         
         <script>
-            const form = document.getElementById('diagnoseForm');
-            const submitBtn = document.getElementById('submitBtn');
-            const responseSection = document.getElementById('responseSection');
-            const responseBox = document.getElementById('responseBox');
-            const messageInput = document.getElementById('message');
-            const traceIdInput = document.getElementById('traceId');
+            const form = document.getElementById('chatForm');
+            const input = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const container = document.getElementById('messagesContainer');
+            let sessionId = null;
+            let isLoading = false;
+            
+            function addMessage(text, sender, isError = false) {
+                if (container.querySelector('.empty-state')) {
+                    container.innerHTML = '';
+                }
+                const msg = document.createElement('div');
+                msg.className = \`message \${sender}\${isError ? ' error' : ''}\`;
+                msg.innerHTML = \`<div class="message-bubble">\${escapeHtml(text)}</div>\`;
+                container.appendChild(msg);
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            function addLoadingMessage() {
+                if (container.querySelector('.empty-state')) {
+                    container.innerHTML = '';
+                }
+                const msg = document.createElement('div');
+                msg.className = 'message assistant';
+                msg.id = 'loadingMsg';
+                msg.innerHTML = '<div class="message-bubble"><div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>';
+                container.appendChild(msg);
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            function removeLoadingMessage() {
+                const loading = document.getElementById('loadingMsg');
+                if (loading) loading.remove();
+            }
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
             
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                if (isLoading) return;
                 
-                const message = messageInput.value.trim();
-                const traceId = traceIdInput.value.trim();
+                const text = input.value.trim();
+                if (!text) return;
                 
-                if (!message) {
-                    alert('Please enter a message');
-                    return;
-                }
+                addMessage(text, 'user');
+                input.value = '';
+                isLoading = true;
+                sendBtn.disabled = true;
                 
-                submitBtn.disabled = true;
-                responseBox.innerHTML = '<div class="loading"><div class="spinner"></div> Processing...</div>';
-                responseSection.classList.add('show');
+                addLoadingMessage();
                 
                 try {
-                    const payload = { message };
-                    if (traceId) payload.trace_id = traceId;
+                    const payload = { message: text };
+                    if (sessionId) payload.trace_id = sessionId;
                     
                     const response = await fetch('/diagnose', {
                         method: 'POST',
@@ -330,27 +385,26 @@ def index():
                     });
                     
                     const data = await response.json();
+                    removeLoadingMessage();
                     
                     if (response.ok) {
-                        const formatted = `Response:\\n${data.response}\\n\\nTrace ID: ${data.trace_id}\\nTurn: ${data.turn}`;
-                        responseBox.textContent = formatted;
-                        responseBox.classList.remove('error');
-                        
-                        // Update trace ID for next message
-                        traceIdInput.value = data.trace_id;
+                        addMessage(data.response, 'assistant');
+                        sessionId = data.trace_id;
                     } else {
-                        const error = data.error || 'Unknown error';
-                        const details = data.details ? `\\nDetails: ${data.details}` : '';
-                        responseBox.textContent = `Error: ${error}${details}`;
-                        responseBox.classList.add('error');
+                        const error = data.details || data.error || 'Unknown error';
+                        addMessage(\`Error: \${error}\`, 'assistant', true);
                     }
                 } catch (err) {
-                    responseBox.textContent = `Network Error: ${err.message}`;
-                    responseBox.classList.add('error');
+                    removeLoadingMessage();
+                    addMessage(\`Network error: \${err.message}\`, 'assistant', true);
                 } finally {
-                    submitBtn.disabled = false;
+                    isLoading = false;
+                    sendBtn.disabled = false;
+                    input.focus();
                 }
             });
+            
+            document.addEventListener('DOMContentLoaded', () => input.focus());
         </script>
     </body>
     </html>
