@@ -20,7 +20,8 @@ from nemoguardrails.actions import action
 from openai import AsyncOpenAI
 
 # Add project root to path so we can import our modules
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# __file__ = config/rails/actions.py, so project root is parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from app_logging.logger import StructuredLogger
