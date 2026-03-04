@@ -646,14 +646,14 @@ def diagnose():
         )
         
         # Estimate cost before API call
-        print(f"\n[Turn {session['turns']}] Estimating cost for Gemini API call...")
+        print(f"\n[Turn {session['turns']}] Estimating cost for OpenAI API call...")
         estimate_api_cost(
             input_text=user_message,
             output_estimate="~500 tokens (typical response)"
         )
         
         # Process through NeMo Guardrails
-        print(f"[Turn {session['turns']}] Sending to NeMo/Gemini...")
+        print(f"[Turn {session['turns']}] Sending to NeMo/OpenAI...")
         response = run_async(
             nemo_rails.generate_async(
                 messages=[{"role": "user", "content": user_message}]
