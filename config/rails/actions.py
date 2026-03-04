@@ -18,6 +18,7 @@ import json
 from pathlib import Path
 from nemoguardrails.actions import action
 from openai import AsyncOpenAI
+import yaml
 
 # Add project root to path so we can import our modules
 # __file__ = config/rails/actions.py, so project root is parents[2]
@@ -251,8 +252,237 @@ async def log_symptom_details_action(symptom: str, category: Optional[str], deta
 
 
 # ============================================================================
-# Phase 3: Diagnostic Reasoning Actions
+# Phase 3: Diagnostic Data Loading (NeMo guides LLM with real data)
 # ============================================================================
+
+def _load_diagnostic_maps() -> Dict[str, Any]:
+    """
+    Load diagnostic_maps.yaml from data directory.
+    
+    Returns:
+        Dict with all symptom maps keyed by symptom name
+    """
+    diagnostic_maps_path = PROJECT_ROOT / "data" / "diagnostic_maps.yaml"
+    
+    try:
+        with open(diagnostic_maps_path, 'r') as f:
+            data = yaml.safe_load(f)
+        return data.get("symptom_maps", {})
+    except Exception as e:
+        logger.log_event(
+            event="diagnostic_maps_load_failed",
+            data={"error": str(e), "path": str(diagnostic_maps_path)},
+            component="actions"
+        )
+        return {}
+
+
+def _map_category_to_symptom_key(category: str) -> str:
+    """
+    Map fuzzy symptom category to diagnostic_maps.yaml keys.
+    
+    Args:
+        category: From FuzzyMatchSymptomAction (e.g., "flipper", "bumper")
+    
+    Returns:
+        Symptom key from diagnostic_maps (e.g., "left_flipper_dead")
+    """
+    # Common mappings from fuzzy categories to diagnostic map keys
+    category_mappings = {
+        "flipper": "left_flipper_dead",  # Will be determined by context
+        "bumper": "bumpers_not_working",
+        "lights": "lights_not_working",
+        "coil": "solenoid_not_firing",
+        "switch": "switch_not_registering",
+        "sound": "sound_not_working",
+        "power": "power_supply_issue",
+        "display": "display_not_showing",
+        "motor": "motor_not_running",
+        "playfield": "playfield_issue",
+        "slingshot": "slingshots_not_firing"
+    }
+    
+    return category_mappings.get(category, "unknown_issue")
+
+
+def _extract_stf_by_skill_level(symptom_data: Dict[str, Any], skill_level: str) -> list[str]:
+    """
+    Extract STF checks from diagnostic map, filtered by skill level.
+    
+    Args:
+        symptom_data: Dict from diagnostic_maps.yaml with 'stf' key
+        skill_level: "beginner", "intermediate", or "pro"
+    
+    Returns:
+        List of formatted diagnostic steps
+    """
+    if "stf" not in symptom_data:
+        return []
+    
+    stf = symptom_data["stf"]
+    steps = []
+    
+    # Beginner: Only STRAIGHT (physical) checks
+    if skill_level == "beginner":
+        if "straight" in stf and "checks" in stf["straight"]:
+            steps.append("=== PHYSICAL/MECHANICAL CHECKS (Start Here) ===")
+            for check in stf["straight"]["checks"]:
+                step_text = f"Step {check.get('id', 'S?')}: {check.get('area', 'Check')}"
+                step_text += f" - {check.get('action', 'Perform check')}"
+                steps.append(step_text)
+    
+    # Intermediate: STRAIGHT + TRUE (physical + validation)
+    elif skill_level == "intermediate":
+        if "straight" in stf and "checks" in stf["straight"]:
+            steps.append("=== PHYSICAL/MECHANICAL CHECKS ===")
+            for check in stf["straight"]["checks"]:
+                step_text = f"Step {check.get('id', 'S?')}: {check.get('area', 'Check')}"
+                step_text += f" - {check.get('action', 'Perform check')}"
+                steps.append(step_text)
+        
+        if "true" in stf and "checks" in stf["true"]:
+            steps.append("\n=== VALIDATION/MEASUREMENT CHECKS ===")
+            for check in stf["true"]["checks"]:
+                step_text = f"Step {check.get('id', 'T?')}: {check.get('area', 'Check')}"
+                step_text += f" - {check.get('action', 'Perform check')}"
+                steps.append(step_text)
+    
+    # Pro: STRAIGHT + TRUE + FLUSH (physical + validation + repair)
+    elif skill_level == "pro":
+        if "straight" in stf and "checks" in stf["straight"]:
+            steps.append("=== PHYSICAL/MECHANICAL CHECKS ===")
+            for check in stf["straight"]["checks"]:
+                step_text = f"Step {check.get('id', 'S?')}: {check.get('area', 'Check')}"
+                step_text += f" - {check.get('action', 'Perform check')}"
+                steps.append(step_text)
+        
+        if "true" in stf and "checks" in stf["true"]:
+            steps.append("\n=== VALIDATION/MEASUREMENT CHECKS ===")
+            for check in stf["true"]["checks"]:
+                step_text = f"Step {check.get('id', 'T?')}: {check.get('area', 'Check')}"
+                step_text += f" - {check.get('action', 'Perform check')}"
+                steps.append(step_text)
+        
+        if "flush" in stf and "checks" in stf["flush"]:
+            steps.append("\n=== COMPONENT REPAIR/REPLACEMENT ===")
+            for check in stf["flush"]["checks"]:
+                step_text = f"Step {check.get('id', 'F?')}: {check.get('area', 'Check')}"
+                step_text += f" - {check.get('action', 'Perform check')}"
+                steps.append(step_text)
+    
+    return steps
+
+
+def _get_diagnostic_steps_from_data(
+    symptom: str,
+    category: str,
+    skill_level: str
+) -> Dict[str, Any]:
+    """
+    Get diagnostic steps from diagnostic_maps.yaml instead of LLM.
+    This is the DATA-DRIVEN approach where NeMo controls the LLM.
+    
+    Args:
+        symptom: User's symptom description
+        category: Matched category (flipper, bumper, etc.)
+        skill_level: User skill level (beginner, intermediate, pro)
+    
+    Returns:
+        Dict with steps, confidence, and metadata
+    """
+    # Load diagnostic maps
+    diagnostic_maps = _load_diagnostic_maps()
+    
+    if not diagnostic_maps:
+        logger.log_event(
+            event="diagnostic_maps_empty",
+            data={"symptom": symptom, "category": category},
+            component="actions"
+        )
+        return {
+            "steps": ["ERROR: Diagnostic database not loaded. Please try again."],
+            "confidence": 0.0,
+            "safety_warnings": [],
+            "estimated_time": "Unknown",
+            "needs_manual": False,
+            "source": "error"
+        }
+    
+    # Map category to symptom key
+    symptom_key = _map_category_to_symptom_key(category)
+    
+    # Look up the symptom in diagnostic maps
+    if symptom_key not in diagnostic_maps:
+        logger.log_event(
+            event="symptom_not_in_maps",
+            data={"context": symptom_key, "available_keys": list(diagnostic_maps.keys())},
+            component="actions"
+        )
+        return {
+            "steps": [f"I don't have diagnostic steps for '{symptom_key}' in the database yet. Please describe the issue in more detail."],
+            "confidence": 0.3,
+            "safety_warnings": [],
+            "estimated_time": "Unknown",
+            "needs_manual": False,
+            "source": "not_found"
+        }
+    
+    symptom_data = diagnostic_maps[symptom_key]
+    
+    # Extract title
+    title = symptom_data.get("title", symptom_key)
+    
+    # Extract STF steps filtered by skill level
+    steps = _extract_stf_by_skill_level(symptom_data, skill_level)
+    
+    if not steps:
+        steps = ["No diagnostic steps available for this issue."]
+    
+    # Add title at the beginning
+    steps.insert(0, f"TROUBLESHOOTING: {title}")
+    
+    # Extract safety warnings if any
+    safety_warnings = []
+    overview = symptom_data.get("overview", "")
+    if "high voltage" in overview.lower():
+        safety_warnings.append("This may involve high voltage - disconnect power before testing")
+    if "electrical" in overview.lower():
+        safety_warnings.append("Electrical safety precautions required")
+    
+    if not safety_warnings:
+        safety_warnings = ["Follow all safety guidelines"]
+    
+    # Estimate time based on number of steps
+    num_steps = len([s for s in steps if s.startswith("Step")])
+    estimated_time = f"{max(num_steps * 3, 10)}-{num_steps * 5 + 10} minutes"
+    
+    # Check if steps will need manual/photo (if they mention specific locations)
+    steps_text = ' '.join(steps).lower()
+    needs_manual = bool(any(pattern in steps_text for pattern in ["fuse", "connector", "test point", "pin", "component", "board"]))
+    
+    result = {
+        "steps": steps,
+        "confidence": 0.95,  # High confidence - using structured data
+        "safety_warnings": safety_warnings,
+        "estimated_time": estimated_time,
+        "needs_manual": needs_manual,
+        "source": "diagnostic_maps"  # Track that this came from data, not LLM
+    }
+    
+    logger.log_event(
+        event="diagnostic_steps_from_data",
+        data={
+            "symptom": symptom,
+            "category": category,
+            "skill_level": skill_level,
+            "steps_count": len(result["steps"]),
+            "source": "diagnostic_maps"
+        },
+        component="actions"
+    )
+    
+    return result
+
 
 async def _call_llm_for_diagnostic_steps(
     machine_info: Dict[str, Any],
@@ -261,86 +491,19 @@ async def _call_llm_for_diagnostic_steps(
     skill_level: str
 ) -> str:
     """
-    Call gpt-5.2 LLM to generate diagnostic steps.
+    DEPRECATED: This function is kept for backwards compatibility.
     
-    Args:
-        machine_info: Dict with machine name, era, manufacturer
-        symptom: The reported symptom/issue
-        category: Symptom category (flipper, bumper, etc.)
-        skill_level: User's skill level (beginner, intermediate, pro)
+    NOTE: New approach uses _get_diagnostic_steps_from_data() instead.
+    The LLM should be used to FORMAT and EXPLAIN the steps, not INVENT them.
     
-    Returns:
-        String with diagnostic steps from LLM
+    This function is no longer called by GenerateDiagnosticStepsAction.
     """
     machine_name = machine_info.get("name", "Unknown machine")
     manufacturer = machine_info.get("manufacturer", "Unknown")
     era = machine_info.get("era", "Unknown")
     
-    prompt = f"""You are a pinball machine diagnostic expert.
-    
-MACHINE INFO:
-- Name: {machine_name}
-- Manufacturer: {manufacturer}
-- Era: {era}
-
-USER'S SKILL LEVEL: {skill_level}
-
-REPORTED SYMPTOM: {symptom}
-CATEGORY: {category}
-
-Generate diagnostic troubleshooting steps for this user. Follow these rules:
-
-1. Tailor the complexity to the user's skill level:
-   - Beginner: Simple, safe checks first (visual inspection, basic testing)
-   - Intermediate: More technical checks (continuity testing, component measurement)
-   - Pro: Advanced diagnostics (board-level testing, part replacement)
-
-2. Rule 0C.R19 - COIN DOOR CONSTRAINT:
-   Never suggest accessing components through the coin door.
-   Only safe coin door access: interlock switch, service buttons, volume, lockdown bar.
-   For ALL other work: must remove glass and raise playfield.
-
-3. Always start with safety warnings if testing will involve power or high voltage.
-
-4. Format output as numbered steps (Step 1:, Step 2:, etc.)
-
-5. Include estimated time and tools/equipment needed.
-
-Generate the diagnostic steps now:"""
-
-    try:
-        openai_client = _get_openai_client()
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a pinball machine diagnostic expert helping users troubleshoot their machines. You prioritize safety and follow all diagnostic rules."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.1,  # Keep focused on facts
-            max_tokens=1000
-        )
-        
-        steps_text = response.choices[0].message.content
-        return steps_text
-        
-    except Exception as e:
-        logger.log_event(
-            event="llm_diagnostic_call_failed",
-            data={
-                "error": str(e),
-                "machine": machine_name,
-                "symptom": symptom
-            },
-            component="actions"
-        )
-        # Return fallback steps if LLM fails
-        return "Step 1: Disconnect power.\nStep 2: Visually inspect the affected area.\nStep 3: Check for obvious mechanical damage or loose connections."
+    # Placeholder - not used anymore
+    return "ERROR: LLM generation deprecated. Use diagnostic_maps instead."
 
 
 @action(name="GenerateDiagnosticStepsAction")
@@ -352,7 +515,11 @@ async def generate_diagnostic_steps_action(
     additional_details: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
-    Generate diagnostic troubleshooting steps using LLM.
+    Generate diagnostic troubleshooting steps from diagnostic_maps.yaml.
+    
+    NEW APPROACH: Data-driven instead of LLM-driven.
+    NeMo loads the actual STF structures and controls what the user sees.
+    LLM can be used later for formatting/explanation if needed.
     
     Args:
         symptom: The issue description
@@ -364,50 +531,35 @@ async def generate_diagnostic_steps_action(
     Returns:
         Dict with diagnostic steps, confidence, and specificity flag
     """
-    # Call LLM to generate diagnostic steps
     try:
-        llm_response = await _call_llm_for_diagnostic_steps(
-            machine_info=machine_info,
+        # Get diagnostic steps from data, not LLM
+        result = _get_diagnostic_steps_from_data(
             symptom=symptom,
             category=category,
             skill_level=skill_level
         )
         
-        # Parse LLM response into steps list
-        # Split by "Step N:" pattern
-        raw_steps = llm_response.split("\n")
-        steps = [step.strip() for step in raw_steps if step.strip() and ("step" in step.lower() or step.startswith("•") or step.startswith("-"))]
-        
-        # If no steps found, fallback to splitting by newline
-        if not steps:
-            steps = [step.strip() for step in raw_steps if step.strip()]
-        
         # Validate coin door constraint (Rule 0C.R19)
-        steps = _validate_coin_door_constraint(steps)
+        result["steps"] = _validate_coin_door_constraint(result["steps"])
         
         # Detect if steps require specific technical details
-        needs_manual = _check_if_steps_need_manual(steps)
+        needs_manual = _check_if_steps_need_manual(result["steps"])
+        result["needs_manual"] = needs_manual
         
-        # Extract safety warnings from LLM response
-        safety_warnings = []
-        if "disconnect" in llm_response.lower() or "power" in llm_response.lower():
-            safety_warnings.append("Disconnect power before testing")
-        if "high voltage" in llm_response.lower():
-            safety_warnings.append("This machine contains high voltage components")
-        if not safety_warnings:
-            safety_warnings = ["Follow all safety guidelines"]
+        logger.log_event(
+            event="diagnostic_steps_generated",
+            data={
+                "symptom": symptom,
+                "category": category,
+                "skill_level": skill_level,
+                "steps_count": len(result["steps"]),
+                "needs_manual": result["needs_manual"],
+                "source": result.get("source", "unknown")
+            },
+            component="actions"
+        )
         
-        # Estimate time based on number of steps
-        estimated_time = f"{min(len(steps) * 5, 45)}-{min(len(steps) * 5 + 15, 60)} minutes"
-        
-        result = {
-            "steps": steps,
-            "confidence": 0.85,  # Higher confidence with real LLM
-            "safety_warnings": safety_warnings,
-            "estimated_time": estimated_time,
-            "needs_manual": needs_manual,
-            "raw_response": llm_response  # Include raw for debugging
-        }
+        return result
         
     except Exception as e:
         logger.log_event(
@@ -420,33 +572,21 @@ async def generate_diagnostic_steps_action(
             component="actions"
         )
         # Fallback response
-        result = {
+        return {
             "steps": [
+                "ERROR: Unable to generate diagnostic steps.",
                 "Step 1: Disconnect power.",
                 "Step 2: Visually inspect the affected area.",
                 "Step 3: Check for obvious mechanical damage or loose connections.",
                 "Step 4: If no obvious issue found, contact a service professional."
             ],
-            "confidence": 0.5,
+            "confidence": 0.3,
             "safety_warnings": ["Disconnect power before testing"],
             "estimated_time": "15-30 minutes",
             "needs_manual": False,
-            "error": str(e)
+            "error": str(e),
+            "source": "fallback"
         }
-    
-    logger.log_event(
-        event="diagnostic_steps_generated",
-        data={
-            "symptom": symptom,
-            "category": category,
-            "skill_level": skill_level,
-            "steps_count": len(result["steps"]),
-            "needs_manual": result["needs_manual"]
-        },
-        component="actions"
-    )
-    
-    return result
 
 
 def _check_if_steps_need_manual(steps: list[str]) -> bool:
