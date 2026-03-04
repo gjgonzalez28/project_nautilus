@@ -10,7 +10,7 @@ rails:
   dialog:
     flows:
       - discovery
-      - hello_world
+      - main
   
   output:
     flows: []
