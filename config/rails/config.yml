@@ -1,3 +1,5 @@
+colang_version: "2.x"
+
 models:
   - type: main
     engine: openai
@@ -9,7 +11,6 @@ rails:
   
   dialog:
     flows:
-      - discovery
       - main
   
   output:
