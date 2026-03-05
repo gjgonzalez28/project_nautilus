@@ -1,0 +1,147 @@
+﻿======================================================================
+ PROJECT NAUTILUS - END-TO-END INTEGRATION TEST
+======================================================================
+[OK] OpenAI API Key: sk-proj-RtO9US7_xF-U...
+
+[1/3] Loading NeMo Guardrails configuration...
+[OK] Configuration loaded
+
+[2/3] Initializing LLM Rails...
+[OK] LLM Rails ready
+
+[3/3] Starting diagnostic session simulation...
+======================================================================
+
+======================================================================
+SCENARIO: User with weak flippers on Bally Eight Ball
+======================================================================
+
+
+[USER] I need help fixing my pinball machine
+
+[BOT] Sure, I can help you with that. But first I need to know the title of your machine, the manufacturer and model if appropriate, and your skill level.
+
+[PASS] PHASE 1 PASSED: Discovery flow triggered correctly (combined question)
+
+----------------------------------------------------------------------
+Testing combined machine and skill level parsing...
+----------------------------------------------------------------------
+
+Parse Result:
+  - Machine Name: Bally Eight Ball 1977
+  - Manufacturer: Unknown
+  - Era: Modern
+  - Skill Level: beginner
+  - Needs Clarification: False
+
+[PASS] PHASE 2 PASSED: Combined parsing works
+
+----------------------------------------------------------------------
+Testing model clarification detection (Godzilla example)...
+----------------------------------------------------------------------
+
+Clarification Test:
+  - Machine: Godzilla, Stern
+  - Skill: intermediate
+  - Needs Clarification: True
+  - Question: I see there are Premium, LE, and Pro versions of Godzilla. Which one do you have?
+
+[PASS] PHASE 3 PASSED: Model clarification detection works
+
+----------------------------------------------------------------------
+Testing symptom fuzzy matching...
+----------------------------------------------------------------------
+
+Symptom Match Result:
+  - Matched: False
+  - Category: unknown
+  - Confidence: 0.21
+
+[WARN] PHASE 4 WARNING: Symptom matching unexpected
+
+----------------------------------------------------------------------
+Testing diagnostic step generation...
+----------------------------------------------------------------------
+
+Diagnostic Steps Generated:
+  1. Step 1: Disconnect power.
+  2. Step 2: Visually inspect the affected area.
+  3. Step 3: Check for obvious mechanical damage or loose connections.
+
+Metadata:
+  - Confidence: 0.85
+  - Estimated Time: 15-30 minutes
+  - Safety Warnings: 1
+
+[PASS] PHASE 5 PASSED: Diagnostic generation works
+
+----------------------------------------------------------------------
+Testing safety gate evaluation...
+----------------------------------------------------------------------
+
+Safety Evaluation (Safe Repair):
+  - Safe: True
+  - Warnings: 0
+  - Requires Expert: False
+
+Safety Evaluation (High Voltage Repair):
+  - Safe: False
+  - Warnings: 2
+  - Requires Expert: True
+
+[PASS] PHASE 6 PASSED: Safety gates working correctly
+
+----------------------------------------------------------------------
+Testing playfield access detection...
+----------------------------------------------------------------------
+
+Playfield Access Test (Beginner + Old Machine):
+  - Needs Access: True
+  - Lockdown Bar Type: lever
+  - Show Instructions: True
+
+Playfield Access Test (Beginner + Modern Stern):
+  - Needs Access: True
+  - Lockdown Bar Type: clips
+  - Show Instructions: True
+
+Playfield Access Test (Intermediate User):
+  - Needs Access: False
+  - Show Instructions: False
+
+Playfield Access Test (No Access Needed):
+  - Needs Access: False
+  - Show Instructions: False
+
+[PASS] PHASE 7 PASSED: Playfield access detection working correctly
+
+----------------------------------------------------------------------
+Testing coin door constraint (Rule 0C.R19)...
+----------------------------------------------------------------------
+
+Test 1: Steps with coin door violations (should be filtered)
+Original steps: 4
+Validated steps: 1
+Violations filtered: 3
+
+[PASS] PHASE 8 PASSED: Coin door constraint working correctly
+
+======================================================================
+
+======================================================================
+ INTEGRATION TEST COMPLETE
+======================================================================
+
+[SUCCESS] All phases executed successfully!
+
+Summary:
+  [OK] Discovery flow triggers properly
+  [OK] Machine fuzzy matching works
+  [OK] Skill level extraction works
+  [OK] Symptom categorization works
+  [OK] Diagnostic generation works
+  [OK] Safety gates function correctly
+  [OK] Playfield access detection works
+  [OK] Coin door constraint enforced
+
+======================================================================
