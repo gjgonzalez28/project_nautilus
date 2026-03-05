@@ -937,6 +937,318 @@ async def detect_playfield_access_action(
     return result
 
 
+@action(name="ValidatePhotoQualityAction")
+async def validate_photo_quality_action(photo_data: Optional[Dict[str, Any]] = None, photo_description: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Validate photo quality for diagnostic use.
+    
+    Assesses whether provided photo meets quality standards:
+    - Adequate lighting (not too dark, not washed out)
+    - Straight-on angle (not angled/birds-eye view)
+    - Focus quality (sharp, not blurry)
+    - Resolution adequate for reading labels/part numbers
+    
+    Args:
+        photo_data: Dict with photo metadata (brightness, contrast, focus score, etc.)
+        photo_description: User's text description of what the photo shows
+    
+    Returns:
+        Dict with quality assessment, pass/fail, and feedback
+    """
+    
+    # If no photo data provided, cannot assess
+    if not photo_data and not photo_description:
+        return {
+            "is_acceptable": False,
+            "quality_score": 0.0,
+            "feedback": "No photo provided. Please upload a photo or describe what you can see.",
+            "suggestion": "Take a clear, straight-on photo of the relevant board area or connectors."
+        }
+    
+    # Placeholder: In production, would use computer vision to assess photo
+    # For now, return positive assessment (to be enhanced with CV later)
+    is_acceptable = True
+    quality_score = 0.85  # Default moderate quality
+    feedback = "Thank you. That's a clear photo. I can see the relevant area. Let's proceed with the diagnosis."
+    
+    # If photo_data exists, could perform more detailed analysis
+    # (brightness thresholding, edge detection for focus, angle estimation, etc.)
+    if photo_data:
+        brightness = photo_data.get("brightness", 0.5)
+        contrast = photo_data.get("contrast", 0.5)
+        focus_score = photo_data.get("focus_score", 0.7)
+        angle = photo_data.get("angle_degrees", 0)  # 0 = straight-on
+        
+        # Quality heuristics
+        if brightness < 0.3 or brightness > 0.95:
+            is_acceptable = False
+            quality_score = 0.4
+            feedback = "The photo is too dark or washed out. Better lighting needed."
+            
+        elif abs(angle) > 30:  # More than 30 degrees off straight-on
+            is_acceptable = False
+            quality_score = 0.5
+            feedback = "The photo appears to be angled. Please provide a straight-on angle of the board area."
+            
+        elif focus_score < 0.6:
+            is_acceptable = False
+            quality_score = 0.3
+            feedback = "The photo appears blurry or out of focus. Please take another with sharper focus."
+            
+        else:
+            # All checks pass
+            is_acceptable = True
+            quality_score = (brightness + contrast + focus_score + (1.0 - abs(angle) / 90)) / 4.0
+            feedback = "Thank you. That's a clear photo. I can see the relevant area clearly. Let's proceed."
+    
+    logger.log_event(
+        event="photo_quality_validated",
+        data={
+            "is_acceptable": is_acceptable,
+            "quality_score": round(quality_score, 2),
+            "has_photo_data": bool(photo_data)
+        },
+        component="actions"
+    )
+    
+    return {
+        "is_acceptable": is_acceptable,
+        "quality_score": round(quality_score, 2),
+        "feedback": feedback,
+        "suggestion": "Take another photo with better lighting and straight-on angle." if not is_acceptable else None
+    }
+
+
+@action(name="DetectBoardLevelWorkAction")
+async def detect_board_level_work(user_input: str) -> Dict[str, Any]:
+    """
+    Detect if user is asking about board-level repair work.
+    
+    Board-level work requires skill level upgrade:
+    - Replacing components (capacitors, resistors, transistors, diodes, ICs)
+    - Unsoldering/resoldering anything ON the PCB
+    - Board-level repairs
+    
+    Safe for beginners without upgrade:
+    - Replacing coils (flipper coils, solenoid coils, etc.)
+    - Fixing loose wires
+    - Re-soldering cold solder points (on harnesses/connectors)
+    - Diagnosing/testing
+    
+    Args:
+        user_input: User's description of work they want to do
+    
+    Returns:
+        Dict with:
+        - is_board_level: True if board-level work detected
+        - work_type: Type of work (soldering, replacement, repair, testing)
+        - confidence: Confidence score 0.0-1.0
+    """
+    
+    user_lower = user_input.lower()
+    
+    # Board-level keywords (soldering/replacing components ON the PCB)
+    board_level_keywords = [
+        "solder", "unsolder", "desoldering",
+        "capacitor", "resistor", "transistor", "diode", "ic", "chip",
+        "component replacement", "replace component",
+        "board repair", "pcb", "circuit board",
+        "component", "motherboard", "driver", "pre-driver"
+    ]
+    
+    # Keywords that ALLOW soldering without upgrade (harness/coil work)
+    safe_solder_keywords = [
+        "coil", "flipper coil", "solenoid coil",
+        "wire", "connector", "harness", "cold solder point", "loose wire"
+    ]
+    
+    # Keywords that are always safe (diagnosis/testing)
+    safe_keywords = [
+        "test", "diagnose", "measure", "check", "meter", "continuity",
+        "voltage", "resistance", "troubleshoot"
+    ]
+    
+    # Check if this is diagnosis/testing (always safe)
+    for keyword in safe_keywords:
+        if keyword in user_lower:
+            return {
+                "is_board_level": False,
+                "work_type": "diagnosis",
+                "confidence": 0.9,
+                "message": None
+            }
+    
+    # Check for safe soldering work (coil/harness/cold solder points)
+    for keyword in safe_solder_keywords:
+        if keyword in user_lower:
+            # Make sure it's not ALSO mentioning board-level stuff
+            has_component_keywords = any(kw in user_lower for kw in board_level_keywords)
+            if not has_component_keywords:
+                return {
+                    "is_board_level": False,
+                    "work_type": "safe_soldering",
+                    "confidence": 0.85,
+                    "message": None
+                }
+    
+    # Check for board-level keywords
+    is_board_level = False
+    for keyword in board_level_keywords:
+        if keyword in user_lower:
+            is_board_level = True
+            break
+    
+    if is_board_level:
+        return {
+            "is_board_level": True,
+            "work_type": "board_repair",
+            "confidence": 0.9,
+            "message": "Board-level repair work detected"
+        }
+    
+    # Default: not clearly board-level
+    return {
+        "is_board_level": False,
+        "work_type": "unknown",
+        "confidence": 0.5,
+        "message": None
+    }
+
+
+@action(name="OfferSkillLevelUpgradeAction")
+async def offer_skill_level_upgrade(current_skill_level: str, work_type: str) -> Dict[str, Any]:
+    """
+    Generate offer to upgrade skill level for board-level work.
+    
+    Beginner users asking about board-level repairs are offered to upgrade
+    to intermediate or pro level to unlock more detailed guidance.
+    
+    Args:
+        current_skill_level: Current skill level (beginner, intermediate, pro)
+        work_type: Type of work requiring upgrade (board_repair, soldering, etc.)
+    
+    Returns:
+        Dict with:
+        - should_offer: True if upgrade should be offered
+        - message: Offer message to user
+        - upgrade_options: List of available upgrade levels
+    """
+    
+    # Only offer upgrade to beginners
+    if current_skill_level.lower() not in ["beginner"]:
+        return {
+            "should_offer": False,
+            "message": None,
+            "upgrade_options": []
+        }
+    
+    # Generate appropriate message based on work type
+    if work_type == "board_repair":
+        message = """That's board-level repair work, which requires intermediate or pro skills. 
+
+I can provide more detailed guidance if you'd like to upgrade your skill level. This will unlock:
+- Specific component locations on your board
+- Soldering and desoldering instructions
+- Advanced diagnostic testing procedures
+
+Would you like to upgrade to intermediate or pro level?"""
+    else:
+        message = """This work involves board-level procedures that I recommend at intermediate or pro skill level.
+
+Would you like to upgrade your skill level to unlock more detailed guidance?"""
+    
+    return {
+        "should_offer": True,
+        "message": message,
+        "upgrade_options": ["intermediate", "pro"]
+    }
+
+
+@action(name="HandleSocialPressureAction")
+async def handle_social_pressure(user_input: str, skill_level: str, required_evidence: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Detect and respond to social pressure tactics from user.
+    
+    When user tries to pressure NeMo into guessing or skipping evidence requirements,
+    NeMo stands firm but adjusts tone based on skill level.
+    
+    Args:
+        user_input: User's message that may contain pressure tactics
+        skill_level: Current skill level (beginner, intermediate, pro)
+        required_evidence: What evidence is needed (meter reading, manual, photo, etc.)
+    
+    Returns:
+        Dict with:
+        - detected_pressure: True if pressure detected
+        - response_message: Firm but appropriate response
+        - confidence: Confidence that this is pressure (0.0-1.0)
+    """
+    
+    user_lower = user_input.lower()
+    
+    # Pressure trigger phrases
+    pressure_phrases = [
+        "just give", "just tell", "just guess", "stop asking", 
+        "skip", "assume", "can't you just", "no manual", "i don't have",
+        "too cautious", "too careful", "being too strict", "don't need",
+        "no time", "too slow", "too detailed", "too much", "overwhelming"
+    ]
+    
+    # Check if pressure is present
+    detected_pressure = False
+    for phrase in pressure_phrases:
+        if phrase in user_lower:
+            detected_pressure = True
+            break
+    
+    if not detected_pressure:
+        return {
+            "detected_pressure": False,
+            "response_message": None,
+            "confidence": 0.0
+        }
+    
+    # Generate response based on skill level
+    if skill_level.lower() == "beginner":
+        # Beginner: Full explanation + empathy
+        response = f"""I understand you want a quick answer. Here's why I need more information:
+
+Without proof of the issue (multimeter reading, visual evidence, manual info), 
+I'd be guessing at the problem. Guessing often leads to the wrong fix, which 
+wastes your time instead of saving it.
+
+The right evidence helps me give you a confident answer that actually solves your problem.
+
+What information can you provide?"""
+        
+        if required_evidence:
+            response += f"\nI specifically need: {required_evidence}"
+    
+    elif skill_level.lower() == "intermediate":
+        # Intermediate: Brief explanation + respect
+        response = f"""I need evidence to be accurate: meter reading, manual info, or clear photos.
+
+I know you value your time, so let's get the right answer instead of a guess that may not fix the problem."""
+        
+        if required_evidence:
+            response += f"\nSpecifically: {required_evidence}"
+    
+    else:  # pro
+        # Pro: Direct and minimal
+        response = f"""I need evidence to ensure accuracy. """
+        
+        if required_evidence:
+            response += f"What I need: {required_evidence}"
+        else:
+            response += "What do you have available?"
+    
+    return {
+        "detected_pressure": True,
+        "response_message": response,
+        "confidence": 0.85
+    }
+
+
 # ============================================================================
 # Deprecated/Stub Actions
 # ============================================================================

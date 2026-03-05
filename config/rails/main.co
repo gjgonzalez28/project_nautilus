@@ -1,0 +1,26 @@
+"""
+Project Nautilus: Main Orchestration Flow (Colang 2.0)
+
+Entry point that chains all sub-flows in sequence:
+1. discovery - Get machine identity and user skill level
+2. symptom_capture - Capture the user's reported issue
+3. diagnostic_reasoning - Generate STF diagnostic steps with guardrails
+
+This is the main conversation flow NeMo executes.
+"""
+
+import core
+
+# Main entry point flow - orchestrates entire conversation
+flow main
+    # Step 1: Identity Gate - Get machine and skill level info
+    await discovery
+    
+    # Step 2: Symptom Capture - What is the user's problem?
+    await symptom_capture
+    
+    # Step 3: Diagnostic Reasoning - Generate STF steps with safety gates
+    await diagnostic_reasoning
+    
+    # Conversation complete
+    bot say "Is there anything else you'd like help with?"

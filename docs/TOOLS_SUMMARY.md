@@ -108,17 +108,68 @@ pytest tests/ --cov=logic --cov-report=html  # With coverage report
 
 **Location:** `tools/` directory
 
-**Tool 1: `validate_all.py`**
+**Baseline Validators (Complete Toolkit)**
+
+**Tool 1: `validate_all.py`** - Master Validator
 ```powershell
 python tools/validate_all.py
 ```
 Checks:
-- All YAML files parse
-- All JSON files parse
+- All YAML files parse (rules/*.yaml)
+- All JSON files parse (data/*.json)
 - Required files exist
 - Python modules import correctly
 
-**Tool 2: `inspect_session.py`** 
+**Tool 2: `validate_colang_flows.py`** - Colang Flow Validator ✅ NEW
+```powershell
+python tools/validate_colang_flows.py [--verbose]
+```
+Checks:
+- All .co files syntax
+- Flow definitions exist
+- Action references valid
+- config.yml flow references
+- Emoji violations (DUTY #15)
+- Unmatched parentheses
+
+**Tool 3: `validate_machine_library.py`** - Machine Data Validator ✅ NEW
+```powershell
+python tools/validate_machine_library.py [--verbose]
+```
+Checks:
+- machine_library.json structure
+- Required fields (id, name, era, manufacturer)
+- Duplicate IDs
+- Valid era values
+- Symptom data quality
+- STF diagnosis sections
+
+**Tool 4: `validate_diagnostic_maps.py`** - Diagnostic Maps Validator ✅ NEW
+```powershell
+python tools/validate_diagnostic_maps.py [--verbose]
+```
+Checks:
+- diagnostic_maps.yaml structure
+- Complete STF sections (STRAIGHT/TRUE/FLUSH)
+- Check items (id, area, action)
+- Branch definitions
+- Data completeness
+
+**Tool 5: `validate_config.py`** - NeMo Config Validator ✅ NEW
+```powershell
+python tools/validate_config.py [--verbose]
+```
+Checks:
+- config.yml structure
+- Model configuration (engine, model, api_key)
+- Rails section (flows defined)
+- Flow references exist
+- Instructions section
+- Environment variable usage
+
+**Session Inspector**
+
+**Tool 6: `inspect_session.py`** - Session Log Inspector
 ```powershell
 python tools/inspect_session.py --latest              # Show latest conversation
 python tools/inspect_session.py --trace-id conv_xxx   # Show specific conversation
@@ -131,10 +182,7 @@ Shows:
 
 Helps debug: Why did the symptom disappear? Why didn't the gate work? What did the user say?
 
-**More tools to build:**
-- `validate_machine_library.py` - Verify machine data
-- `validate_diagnostic_maps.py` - Verify symptom data
-- `validate_colang_flows.py` - Verify Colang .co files (once created)
+**Future Tools (Not Yet Built):**
 - `replay_conversation.py` - Replay a conversation step-by-step
 - `analyze_colang_flows.py` - Visualize flow graphs
 

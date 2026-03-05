@@ -51,6 +51,36 @@ flow diagnostic_reasoning
         # High risk - recommend professional
         await safety_block_flow
     else
+        # Check if steps involve board-level work (for beginner users)
+        if $skill_level == "beginner"
+            $board_work_detection = await DetectBoardLevelWorkAction(
+                user_input=$symptom_description
+            )
+            
+            if $board_work_detection.is_board_level
+                # Offer skill level upgrade
+                $upgrade_offer = await OfferSkillLevelUpgradeAction(
+                    current_skill_level=$skill_level,
+                    work_type=$board_work_detection.work_type
+                )
+                
+                if $upgrade_offer.should_offer
+                    bot say $upgrade_offer.message
+                    
+                    $user_response = await user said something
+                    
+                    # Check if user accepts upgrade
+                    if "intermediate" in $user_response or "upgrade" in $user_response or "pro" in $user_response
+                        # Parse which level they want
+                        if "pro" in $user_response
+                            $skill_level = "pro"
+                            bot say "Great! I've upgraded you to pro level. Now I can give you more advanced guidance."
+                        else
+                            $skill_level = "intermediate"
+                            bot say "Great! I've upgraded you to intermediate level. Now I can give you more detailed guidance."
+                    else
+                        bot say "Understood. I'll provide guidance at the beginner level, but I recommend having a technician handle this work."
+        
         # Check if playfield access needed (beginners only)
         $playfield_check = await DetectPlayfieldAccessAction(
             diagnostic_steps=$diagnostic_steps,
@@ -75,7 +105,7 @@ flow diagnostic_reasoning
 # Sub-flow: Present diagnostic steps to user
 flow present_diagnostic_steps
     # Show safety warnings first (if any exist, they'll be displayed by the bot)
-    bot say "⚠️ Safety check complete. Proceeding with diagnostic steps..."
+    bot say "Safety check complete. Proceeding with diagnostic steps..."
     
     # Show estimated time
     bot say "Estimated time: {$estimated_time}"
@@ -90,7 +120,7 @@ flow present_diagnostic_steps
 
 # Sub-flow: Safety block for high-risk repairs
 flow safety_block_flow
-    bot say "⚠️ SAFETY ALERT ⚠️"
+    bot say "SAFETY ALERT"
     bot say "This repair involves procedures that could be dangerous without proper training and equipment."
     
     bot say "Based on the diagnostic analysis, this work may involve:"
@@ -118,7 +148,7 @@ flow safety_block_flow
 # Triggers when diagnostic steps require specific technical details
 # (fuse numbers, connector IDs, test points, voltages at specific locations)
 flow manual_location_gate
-    bot say "📖 DOCUMENTATION REQUIRED"
+    bot say "DOCUMENTATION REQUIRED"
     
     bot say "The diagnostic steps ahead involve specific technical details:"
     bot say "- Exact fuse numbers, connector IDs, or test point locations"
@@ -126,19 +156,31 @@ flow manual_location_gate
     bot say "- Pinouts or voltage readings at specific points"
     
     bot say "\nTo give you accurate, machine-specific guidance, I need ONE of the following:"
-    bot say "1️⃣ Upload the service manual for your machine (I'll find the relevant sections)"
-    bot say "2️⃣ Upload a clear photo of the board area in question"
-    bot say "3️⃣ Continue without documentation (I'll provide general steps with verification guidance)"
+    bot say "1. Upload the service manual for your machine (I'll find the relevant sections)"
+    bot say "2. Upload a CLEAR PHOTO OF THE BOARD showing component labels and silkscreen markings"
+    bot say "3. Continue without documentation (I'll provide general steps with verification guidance)"
     
-    bot say "\n📋 IMPORTANT COPYRIGHT NOTE:"
+    bot say "\nIMPORTANT COPYRIGHT NOTE:"
     bot say "I cannot store or distribute copyrighted service manuals."
     bot say "If you need a manual, check IPDB.org for your specific machine."
-    bot say "Any documents you upload will only be used for this session and discarded afterward."
+    bot say "Any documents or photos you upload will only be used for this session and discarded afterward."
     
     bot say "\nWhat would you like to do?"
     bot say "Type: 'upload manual', 'upload photo', or 'continue without documentation'"
     
     $user_choice = await user said something
+    
+    # Check if user is trying to pressure past the gate
+    $pressure_check = await HandleSocialPressureAction(
+        user_input=$user_choice,
+        skill_level=$skill_level,
+        required_evidence="Either a meter reading, manual info, or clear board photo"
+    )
+    
+    if $pressure_check.detected_pressure
+        bot say $pressure_check.response_message
+        bot say "\nLet's try again. What would you prefer: upload manual, photo, or continue without docs?"
+        $user_choice = await user said something
     
     # Check for manual upload
     if "upload" in $user_choice and "manual" in $user_choice
@@ -154,15 +196,35 @@ flow manual_location_gate
         $has_documentation = True
         
     else if "upload" in $user_choice and "photo" in $user_choice
-        bot say "Perfect! Please upload a clear photo of the board area."
-        bot say "Make sure component labels are readable if possible."
-        # TODO: Implement photo upload handling and visual analysis
+        bot say "Perfect! For board-level diagnostics, I need a clear board photo."
+        bot say "Please upload a photo of the relevant board area with:"
+        bot say "- Component labels clearly visible and readable"
+        bot say "- Silkscreen markings showing part numbers (U1, R5, F1, etc.)"
+        bot say "- Straight-on angle (not angled or birds-eye view)"
+        bot say "- Good lighting to see board details"
+        
+        $board_photo = await user said something
+        
+        # Validate board photo quality
+        $board_photo_validation = await ValidatePhotoQualityAction(
+            photo_description=$board_photo
+        )
+        
+        if not $board_photo_validation.is_acceptable
+            bot say $board_photo_validation.feedback
+            bot say "For board work, I really need to read the component labels clearly."
+            bot say $board_photo_validation.suggestion
+        else
+            bot say $board_photo_validation.feedback
+            bot say "Excellent! I can work with this photo for board-specific guidance."
+        
+        # TODO: Implement board photo upload handling and visual analysis
         $has_documentation = True
         
     else
         # Continue without documentation - use verification approach
         bot say "Understood. I'll provide general diagnostic guidance."
-        bot say "⚠️ Since I don't have your specific board layout, I'll include verification steps."
+        bot say "Since I don't have your specific board layout, I'll include verification steps."
         bot say "You'll need to visually confirm component locations before testing."
         $has_documentation = False
 
