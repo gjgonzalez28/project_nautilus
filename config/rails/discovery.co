@@ -18,13 +18,17 @@ flow discovery
     # Check if we already have machine and skill info from a previous turn
     $session_state = await GetSessionStateAction()
     
+    # DEBUG: Print session state to see if it's being retrieved
+    if $session_state
+        bot say "[DEBUG] Found session state: {$session_state}"
+    
     # If discovery_done flag is set, skip discovery
-    if $session_state and $session_state.get("discovery_done")
+    if $session_state and $session_state["discovery_done"]
         # Restore variables from previous turn
-        $machine_name = $session_state.get("machine_name")
-        $manufacturer = $session_state.get("manufacturer")
-        $era = $session_state.get("era")
-        $skill_level = $session_state.get("skill_level")
+        $machine_name = $session_state["machine_name"]
+        $manufacturer = $session_state["manufacturer"]
+        $era = $session_state["era"]
+        $skill_level = $session_state["skill_level"]
         bot say "Welcome back! I have your machine info ({$machine_name}) ready from our last conversation."
         return
     
