@@ -1,0 +1,55 @@
+{
+  "run_id": "eval-20260306-214544-f58db2",
+  "timestamp": "2026-03-06T21:45:47.912542+00:00",
+  "checkpoints": [
+    {
+      "checkpoint_id": "CP-01",
+      "description": "Turn 1 triggers identity gate prompt",
+      "turn": 1,
+      "passed": true,
+      "reasons": [],
+      "matched_expected": "title of your machine"
+    },
+    {
+      "checkpoint_id": "CP-02",
+      "description": "Turn 2 advances beyond identity gate",
+      "turn": 2,
+      "passed": false,
+      "reasons": [
+        "expected_text_missing",
+        "forbidden_text_found:title of your machine"
+      ],
+      "matched_expected": null
+    },
+    {
+      "checkpoint_id": "CP-03",
+      "description": "Turn 3 remains out of identity loop",
+      "turn": 3,
+      "passed": false,
+      "reasons": [
+        "expected_text_missing",
+        "forbidden_text_found:title of your machine"
+      ],
+      "matched_expected": null
+    },
+    {
+      "checkpoint_id": "CP-04",
+      "description": "Turn 1 identity gate appears for typo scenario",
+      "turn": 1,
+      "passed": true,
+      "reasons": [],
+      "matched_expected": "title of your machine"
+    },
+    {
+      "checkpoint_id": "CP-05",
+      "description": "Turn 2 typo scenario progresses past identity",
+      "turn": 2,
+      "passed": false,
+      "reasons": [
+        "expected_text_missing",
+        "forbidden_text_found:title of your machine"
+      ],
+      "matched_expected": null
+    }
+  ]
+}

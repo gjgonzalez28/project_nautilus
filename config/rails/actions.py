@@ -138,8 +138,11 @@ async def get_session_state_action(key: str = None) -> Dict[str, Any]:
         Dict with session state or empty dict if session not found
     """
     trace_id = get_current_trace_id()
+    logger.info(f"[DEBUG GetSessionState] trace_id={trace_id}, key={key}")
+    logger.info(f"[DEBUG GetSessionState] _flask_sessions keys={list(_flask_sessions.keys())}")
     
     if not trace_id or trace_id not in _flask_sessions:
+        logger.info(f"[DEBUG GetSessionState] FAILED: trace_id not in sessions")
         logger.log_event(
             event="get_session_state_failed",
             data={"reason": "no_trace_id_or_session_not_found", "trace_id": trace_id},
@@ -149,12 +152,14 @@ async def get_session_state_action(key: str = None) -> Dict[str, Any]:
     
     session = _flask_sessions[trace_id]
     discovery_state = session.get("discovery_state", {})
+    logger.info(f"[DEBUG GetSessionState] Found session, discovery_state={discovery_state}")
     
     if key:
         result = {key: discovery_state.get(key)}
     else:
         result = discovery_state
     
+    logger.info(f"[DEBUG GetSessionState] Returning result={result}")
     logger.log_event(
         event="get_session_state",
         data={"key": key, "result": result},
@@ -885,18 +890,43 @@ async def evaluate_safety_gates_action(
 # ============================================================================
 
 @action(name="ParseMachineAndSkillAction")
-async def parse_machine_and_skill_action(user_input: str) -> Dict[str, Any]:
+async def parse_machine_and_skill_action(user_input: str = None) -> Dict[str, Any]:
     """
     Parse machine name, manufacturer, model, and skill level from a single user response.
     Also detect if model clarification is needed (Premium vs LE vs Pro, etc.)
     
     Args:
-        user_input: User's combined response with machine and skill info
+        user_input: User's combined response with machine and skill info.
+                   If not provided, uses latest message from session history.
     
     Returns:
         Dict with parsed machine_name, manufacturer, era, skill_level, 
         needs_clarification flag, and clarification_question if needed
     """
+    # If user_input not provided, try to extract from session history (Turn 2+ support)
+    if not user_input:
+        trace_id = get_current_trace_id()
+        if trace_id and trace_id in _flask_sessions:
+            session = _flask_sessions[trace_id]
+            messages = session.get("messages", [])
+            # Get the latest user message
+            for msg in reversed(messages):
+                if msg.get("role") == "user":
+                    user_input = msg.get("content", "")
+                    break
+        
+        if not user_input:
+            logger.info(f"[DEBUG ParseMachineAndSkill] No user_input provided and could not extract from history")
+            return {
+                "machine_name": "Unknown",
+                "manufacturer": "Unknown",
+                "era": "Modern",
+                "skill_level": "beginner",
+                "needs_clarification": False,
+                "clarification_question": ""
+            }
+    
+    logger.info(f"[DEBUG ParseMachineAndSkill] Processing user_input: {user_input[:100]}")
     user_lower = user_input.lower()
     
     # Extract skill level
@@ -965,6 +995,7 @@ async def parse_machine_and_skill_action(user_input: str) -> Dict[str, Any]:
     # Store discovery state in session for cross-turn persistence
     # This way Turn 2+ won't re-ask for machine/skill info
     trace_id = get_current_trace_id()
+    logger.info(f"[DEBUG ParseMachineAndSkill] About to store discovery_state, trace_id={trace_id}")
     if trace_id and trace_id in _flask_sessions:
         session = _flask_sessions[trace_id]
         session["discovery_state"] = {
@@ -974,11 +1005,14 @@ async def parse_machine_and_skill_action(user_input: str) -> Dict[str, Any]:
             "era": era,
             "skill_level": skill_level
         }
+        logger.info(f"[DEBUG ParseMachineAndSkill] STORED discovery_state={session['discovery_state']}")
         logger.log_event(
             event="discovery_state_stored",
             data={"machine": machine_name, "skill_level": skill_level},
             component="actions"
         )
+    else:
+        logger.info(f"[DEBUG ParseMachineAndSkill] FAILED to store: trace_id not in sessions")
     
     return result
 

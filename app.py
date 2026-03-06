@@ -126,12 +126,22 @@ else:
 
 sessions = {}
 
+# Define a no-op function as default
+def _noop_set_current_trace_id(trace_id: str):
+    pass
+
+set_current_trace_id = _noop_set_current_trace_id
+
 # Initialize session management for actions (allows cross-turn state persistence)
 try:
-    from config.rails.actions import set_flask_sessions, set_current_trace_id
+    from config.rails.actions import set_flask_sessions, set_current_trace_id as set_trace_id_func
     set_flask_sessions(sessions)
+    set_current_trace_id = set_trace_id_func
+    print("✅ Session management initialized")
+except ImportError as e:
+    print(f"❌ Could not import session management: {e}")
 except Exception as e:
-    print(f"⚠️  Could not import session management: {e}")
+    print(f"❌ Session management error: {e}")
 
 
 
@@ -666,14 +676,22 @@ def diagnose():
         
         # Set current trace_id for actions to access session state
         set_current_trace_id(trace_id)
+        print(f"[Turn {session['turns']}] Trace ID set for session state: {trace_id}")
+        logger.info(f"[DEBUG Turn {session['turns']}] Session state BEFORE NeMo: {session.get('discovery_state', {})}")
+        
+        # Build message history (include all prior turns)
+        messages = list(session["messages"])  # Include conversation history
+        messages.append({"role": "user", "content": user_message})  # Add current message
+        logger.info(f"[DEBUG Turn {session['turns']}] Passing {len(messages)} messages to NeMo (prior history + current)")
         
         # Process through NeMo Guardrails
         print(f"[Turn {session['turns']}] Sending to NeMo/OpenAI...")
         response = run_async(
             nemo_rails.generate_async(
-                messages=[{"role": "user", "content": user_message}]
+                messages=messages  # Pass full conversation history
             )
         )
+        logger.info(f"[DEBUG Turn {session['turns']}] Session state AFTER NeMo: {session.get('discovery_state', {})}")
         
         # Extract response text
         bot_message = response.get("content", "") if isinstance(response, dict) else str(response)
