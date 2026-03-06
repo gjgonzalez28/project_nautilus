@@ -58,12 +58,3 @@ flow discovery
     
     # Identity gate complete
     bot say "Perfect! I'm ready to help you diagnose issues with your {$machine_name}."
-    
-    # Store discovery results in session so we don't re-ask on next turn
-    $session_update = await SetSessionStateAction(state_dict={
-        "discovery_done": true,
-        "machine_name": $machine_name,
-        "manufacturer": $manufacturer,
-        "era": $era,
-        "skill_level": $skill_level
-    })

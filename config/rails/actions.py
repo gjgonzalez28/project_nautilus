@@ -962,6 +962,24 @@ async def parse_machine_and_skill_action(user_input: str) -> Dict[str, Any]:
         component="actions"
     )
     
+    # Store discovery state in session for cross-turn persistence
+    # This way Turn 2+ won't re-ask for machine/skill info
+    trace_id = get_current_trace_id()
+    if trace_id and trace_id in _flask_sessions:
+        session = _flask_sessions[trace_id]
+        session["discovery_state"] = {
+            "discovery_done": True,
+            "machine_name": machine_name,
+            "manufacturer": manufacturer,
+            "era": era,
+            "skill_level": skill_level
+        }
+        logger.log_event(
+            event="discovery_state_stored",
+            data={"machine": machine_name, "skill_level": skill_level},
+            component="actions"
+        )
+    
     return result
 
 
