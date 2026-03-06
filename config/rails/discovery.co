@@ -15,8 +15,20 @@ import core
 
 # Main discovery flow
 flow discovery
-    # Machine and skill level identification - ask for everything at once
+    # Check if we already have machine and skill info from a previous turn
+    $session_state = await GetSessionStateAction()
     
+    # If discovery_done flag is set, skip discovery
+    if $session_state and $session_state.get("discovery_done")
+        # Restore variables from previous turn
+        $machine_name = $session_state.get("machine_name")
+        $manufacturer = $session_state.get("manufacturer")
+        $era = $session_state.get("era")
+        $skill_level = $session_state.get("skill_level")
+        bot say "Welcome back! I have your machine info ({$machine_name}) ready from our last conversation."
+        return
+    
+    # Machine and skill level identification - ask for everything at once
     bot say "Sure, I can help you with that. But first I need to know the title of your machine, the manufacturer and model if appropriate, and your skill level."
     
     # Get user's response with all info
@@ -46,3 +58,12 @@ flow discovery
     
     # Identity gate complete
     bot say "Perfect! I'm ready to help you diagnose issues with your {$machine_name}."
+    
+    # Store discovery results in session so we don't re-ask on next turn
+    $session_update = await SetSessionStateAction(state_dict={
+        "discovery_done": true,
+        "machine_name": $machine_name,
+        "manufacturer": $manufacturer,
+        "era": $era,
+        "skill_level": $skill_level
+    })

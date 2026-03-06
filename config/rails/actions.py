@@ -33,6 +33,30 @@ logger = StructuredLogger(__name__)
 
 
 # ============================================================================
+# Session Management (Shared with Flask)
+# ============================================================================
+
+# Global variable to store the current trace_id when processing a request
+# Flask sets this before calling NeMo, so actions can access the session
+_current_trace_id: Optional[str] = None
+_flask_sessions: Dict[str, Any] = {}
+
+def set_current_trace_id(trace_id: str):
+    """Set the current trace_id for the active request. Called by Flask."""
+    global _current_trace_id
+    _current_trace_id = trace_id
+
+def set_flask_sessions(sessions_dict: Dict[str, Any]):
+    """Set reference to Flask's sessions dict. Called by Flask at startup."""
+    global _flask_sessions
+    _flask_sessions = sessions_dict
+
+def get_current_trace_id() -> Optional[str]:
+    """Get the current trace_id"""
+    return _current_trace_id
+
+
+# ============================================================================
 # Lazy OpenAI Client Initialization
 # ============================================================================
 
@@ -93,6 +117,92 @@ async def initialize_session(user_id: Optional[str] = None) -> Dict[str, Any]:
     )
     
     return session_state
+
+
+# ============================================================================
+# Session State Management Actions (for cross-turn persistence)
+# ============================================================================
+
+@action(name="GetSessionStateAction")
+async def get_session_state_action(key: str = None) -> Dict[str, Any]:
+    """
+    Get session state from Flask's global sessions dict.
+    
+    This allows flows to check if discovery was already completed in a previous turn.
+    
+    Args:
+        key: Optional specific key to retrieve (e.g., "machine_name").
+             If None, returns entire discovery state.
+    
+    Returns:
+        Dict with session state or empty dict if session not found
+    """
+    trace_id = get_current_trace_id()
+    
+    if not trace_id or trace_id not in _flask_sessions:
+        logger.log_event(
+            event="get_session_state_failed",
+            data={"reason": "no_trace_id_or_session_not_found", "trace_id": trace_id},
+            component="actions"
+        )
+        return {}
+    
+    session = _flask_sessions[trace_id]
+    discovery_state = session.get("discovery_state", {})
+    
+    if key:
+        result = {key: discovery_state.get(key)}
+    else:
+        result = discovery_state
+    
+    logger.log_event(
+        event="get_session_state",
+        data={"key": key, "result": result},
+        component="actions"
+    )
+    
+    return result
+
+
+@action(name="SetSessionStateAction")
+async def set_session_state_action(state_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Update session state in Flask's global sessions dict.
+    
+    This stores discovery results (machine_name, skill_level) for future turns.
+    
+    Args:
+        state_dict: Dict of state keys/values to set (e.g., {"machine_name": "...", "skill_level": "..."})
+    
+    Returns:
+        Dict with updated state or error info
+    """
+    trace_id = get_current_trace_id()
+    
+    if not trace_id or trace_id not in _flask_sessions:
+        logger.log_event(
+            event="set_session_state_failed",
+            data={"reason": "no_trace_id_or_session_not_found", "trace_id": trace_id},
+            component="actions"
+        )
+        return {"error": "Session not found"}
+    
+    session = _flask_sessions[trace_id]
+    
+    # Initialize discovery_state if not exists
+    if "discovery_state" not in session:
+        session["discovery_state"] = {}
+    
+    # Update with new values
+    session["discovery_state"].update(state_dict)
+    
+    logger.log_event(
+        event="set_session_state",
+        data={"updated": state_dict},
+        component="actions"
+    )
+    
+    return {"status": "success", "state": session["discovery_state"]}
 
 
 # ============================================================================

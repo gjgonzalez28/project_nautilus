@@ -21,6 +21,9 @@ from app_logging.logger import setup_logging, StructuredLogger
 from app_logging.cost_monitor import estimate_api_cost
 from nemoguardrails import LLMRails, RailsConfig
 
+# Import session management from actions (must be after NeMo setup)
+# We'll do this after nemo is initialized to avoid circular imports
+
 # Load environment variables
 load_dotenv()
 
@@ -122,6 +125,14 @@ else:
 # ============================================================================
 
 sessions = {}
+
+# Initialize session management for actions (allows cross-turn state persistence)
+try:
+    from config.rails.actions import set_flask_sessions, set_current_trace_id
+    set_flask_sessions(sessions)
+except Exception as e:
+    print(f"⚠️  Could not import session management: {e}")
+
 
 
 # ============================================================================
@@ -629,7 +640,8 @@ def diagnose():
             trace_id = logger.set_trace_id()
             sessions[trace_id] = {
                 "turns": 0,
-                "messages": []
+                "messages": [],
+                "discovery_state": {}  # For cross-turn persistence
             }
         
         session = sessions[trace_id]
@@ -651,6 +663,9 @@ def diagnose():
             input_text=user_message,
             output_estimate="~500 tokens (typical response)"
         )
+        
+        # Set current trace_id for actions to access session state
+        set_current_trace_id(trace_id)
         
         # Process through NeMo Guardrails
         print(f"[Turn {session['turns']}] Sending to NeMo/OpenAI...")
