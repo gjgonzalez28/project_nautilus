@@ -46,7 +46,7 @@ pytest tests/test_integration/ -v
 The logging system is built-in, but ensure it's configured:
 
 ```python
-from logging.logger import setup_logging, get_logger
+from app_logging.logger import setup_logging, get_logger
 
 # In your code
 setup_logging(log_dir="logs", log_level="DEBUG")
@@ -275,6 +275,18 @@ setup_logging(log_level="WARNING") # Only warnings/errors
 
 **DEBUG** is slower but shows everything. Use for troubleshooting.
 **INFO** is normal production level.
+
+---
+
+## Lessons Learned
+
+Key debugging insights from project development:
+
+1. **Having restore points saves hours of recovery** - Use git tags or commit checkpoints before major changes
+2. **Stable baseline > perfect** - Working on a stable foundation is more productive than chasing perfection
+3. **Session state management in NeMo is complex** - Don't underestimate multi-turn conversation persistence
+4. **Colang 2.0 syntax differs from expectations** - No dict literals in functions, review syntax carefully
+5. **Small, focused changes better than multi-file experiments** - Incremental changes are easier to debug and validate
 
 ---
 

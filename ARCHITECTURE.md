@@ -1,8 +1,8 @@
 # Project Nautilus: System Architecture
 
 **Version:** 2.0 (NeMo Guardrails)  
-**Last Updated:** February 23, 2026  
-**Status:** Foundation Phase (Pre-Implementation)
+**Last Updated:** March 8, 2026  
+**Status:** Active foundation / debugging phase
 
 ---
 
@@ -79,11 +79,23 @@ Colang flows handle:
 5. **Diagnostics Flow** (`diagnostics.co`) - STF diagnostic output
 6. **Safety Flow** (`safety.co`) - Gate enforcement (0C.S1, 0C.R19, etc.)
 
-**Why NeMo?**
+**Why NeMo? (Not Pure Python)**
+
+The project switched to NeMo Guardrails after pure Python state management failed:
+
+**Python approach failed because:**
+- SessionState dict loses state between RuleEngine turns
+- ChatGPT + imperative Python = no guaranteed flow control
+- State management bugs caused infinite loops
+
+**NeMo solves this because:**
+- ✅ Designed for multi-turn conversations with persistent state
+- ✅ Built-in memory (`$variables`) persists across turns - variables like `$machine_name`, `$symptom`, etc. don't get lost
 - ✅ Deterministic state machine (no random behavior)
-- ✅ Built-in memory (`$variables`) persists across turns
+- ✅ Flow transitions explicit, testable, deterministic
+- ✅ Guards/gates block invalid paths programmatically
 - ✅ Intent recognition without hallucination
-- ✅ Flow routing based on conditions, not guesses
+- ✅ Colang is a DSL built specifically for conversation flows
 - ✅ Easy to test and debug (structured inputs/outputs)
 
 ### 3.2 Python Utilities — The Toolbox
@@ -125,7 +137,7 @@ def validate_required_files() -> bool
 
 ### 3.3 Structured Logging — The Diagnostic Recorder
 
-**Location:** `logging/logger.py`
+**Location:** `app_logging/logger.py`
 
 JSON event log with **trace IDs** for conversation correlation:
 
@@ -292,7 +304,7 @@ project_nautilus/
 │   ├── validators.py                   # Pre-flight checks (TBD)
 │   └── __pycache__/                    # Python cache (ignore)
 │
-├── 📁 logging/                         # Structured logging
+├── 📁 app_logging/                     # Structured logging
 │   ├── logger.py                       # StructuredLogger class
 │   ├── __init__.py                     # Package init
 │   └── (logs written to logs/ at runtime)
@@ -339,8 +351,13 @@ project_nautilus/
 ├── .env.example                        # Environment template
 ├── .gitignore                          # Git ignore rules
 ├── README.md                           # Project overview
-├── PROJECT_PLAN.md                     # 5-phase development plan
-├── CURRENT_STATUS.md                   # Progress tracker
+├── docs/                               # Active documentation
+│   ├── PROJECT_BRIEF.md                # Project overview & design principles
+│   ├── CURRENT_TASK.md                 # Current work & blockers
+│   ├── NEMO_DUTIES.md                  # NeMo behavior specification
+│   ├── SKILL_LEVEL_SYSTEM.md           # Skill level design
+│   ├── DEBUGGING_GUIDE.md              # Debugging procedures
+│   └── TOOLS_SUMMARY.md                # Developer tools reference
 └── ARCHITECTURE.md                     # This file
 ```
 
@@ -668,7 +685,8 @@ pytest tests/test_safety/ -v
 ---
 
 **For detailed implementation guides, see:**
-- [PROJECT_PLAN.md](PROJECT_PLAN.md) — 5-phase development roadmap
-- [CURRENT_STATUS.md](CURRENT_STATUS.md) — Progress tracker & blockers
+- [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) — Project overview & design principles
+- [docs/CURRENT_TASK.md](docs/CURRENT_TASK.md) — Current work & blockers
+- [docs/SKILL_LEVEL_SYSTEM.md](docs/SKILL_LEVEL_SYSTEM.md) — Skill level design
 - [docs/DEBUGGING_GUIDE.md](docs/DEBUGGING_GUIDE.md) — How to debug issues
 - [docs/TOOLS_SUMMARY.md](docs/TOOLS_SUMMARY.md) — Developer tools reference

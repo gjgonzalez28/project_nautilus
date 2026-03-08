@@ -9,7 +9,7 @@
 
 ### 1. Structured Logging Infrastructure ✅
 
-**Location:** `logging/logger.py`
+**Location:** `app_logging/logger.py`
 
 Provides:
 - JSON-formatted logs for all events
@@ -18,7 +18,7 @@ Provides:
 
 **Usage:**
 ```python
-from logging.logger import get_logger, setup_logging
+from app_logging.logger import get_logger, setup_logging
 
 setup_logging(log_dir="logs", log_level="DEBUG")
 logger = get_logger(__name__)
@@ -261,8 +261,8 @@ These will be built once we have the NeMo architecture working:
 
 ## File Checklist
 
-✅ `logging/logger.py` - Structured logging engine
-✅ `logging/__init__.py` - Package initialization
+✅ `app_logging/logger.py` - Structured logging engine
+✅ `app_logging/__init__.py` - Package initialization
 ✅ `.vscode/launch.json` - Debugger config
 ✅ `.vscode/tasks.json` - Quick tasks
 ✅ `requirements.txt` - Updated with all packages
