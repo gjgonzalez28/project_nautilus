@@ -20,7 +20,7 @@ symptom_maps:
           - id: "S4"
             area: "Flipper coil"
             action: "Check lug wires and coil sleeve binding."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Fuses"
@@ -69,7 +69,7 @@ symptom_maps:
           - id: "S4"
             area: "Flipper coil"
             action: "Check right coil lugs and sleeve binding."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Fuses"
@@ -117,7 +117,7 @@ symptom_maps:
           - id: "S4"
             area: "Bumper skirt"
             action: "Ensure skirt moves freely and isn't stuck/jamming solenoid."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Fuses"
@@ -165,7 +165,7 @@ symptom_maps:
           - id: "S4"
             area: "Switch contact"
             action: "Verify slingshot switch contact is clean and making connection."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Fuses"
@@ -213,7 +213,7 @@ symptom_maps:
           - id: "S4"
             area: "Bumper/ramp angles"
             action: "Verify individual ramps and bumper bases aren't misaligned."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Level measurement"
@@ -261,7 +261,7 @@ symptom_maps:
           - id: "S4"
             area: "Fasteners"
             action: "Check all solenoid mounting bolts are tight."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Coil continuity"
@@ -309,7 +309,7 @@ symptom_maps:
           - id: "S4"
             area: "Entrance opening"
             action: "Confirm entrance isn't blocked by nearby hardware or debris."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Ramp level"
@@ -357,7 +357,7 @@ symptom_maps:
           - id: "S4"
             area: "Neighboring lights"
             action: "Test nearby lights in the same circuit to isolate the issue."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Bulb continuity"
@@ -405,7 +405,7 @@ symptom_maps:
           - id: "S4"
             area: "Drain switch"
             action: "Manually trigger drain switch; listen for solenoid click."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Solenoid voltage"
@@ -453,7 +453,7 @@ symptom_maps:
           - id: "S4"
             area: "Ball in the machine"
             action: "Verify a ball is actually in the machine; not stuck elsewhere."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Switch continuity"
@@ -501,7 +501,7 @@ symptom_maps:
           - id: "S4"
             area: "Cable integrity"
             action: "Inspect ribbon cable from main board to display for creases or separations."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Display voltage"
@@ -549,7 +549,7 @@ symptom_maps:
           - id: "S4"
             area: "Mechanical wear"
             action: "Test flipper bushings for excessive wear allowing shaft misalignment."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Supply voltage"
@@ -597,7 +597,7 @@ symptom_maps:
           - id: "S4"
             area: "Debris"
             action: "Clear any debris or coins jamming the target mechanism."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Solenoid voltage"
@@ -645,7 +645,7 @@ symptom_maps:
           - id: "S4"
             area: "Playfield level"
             action: "Confirm playfield is properly leveled (may affect ball speed)."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Orbit switch"
@@ -693,7 +693,7 @@ symptom_maps:
           - id: "S4"
             area: "Ramp entry"
             action: "Verify ball is entering spinner ramp (not bypassing it)."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Switch continuity"
@@ -741,7 +741,7 @@ symptom_maps:
           - id: "S4"
             area: "Return spring"
             action: "Inspect kickback return spring for breakage or weak tension."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Lane switch"
@@ -789,7 +789,7 @@ symptom_maps:
           - id: "S4"
             area: "External power"
             action: "Test outlet with another device to confirm wall power is good."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Main fuse"
@@ -837,7 +837,7 @@ symptom_maps:
           - id: "S4"
             area: "Volume control"
             action: "Verify cabinet volume control is not turned all the way down."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Speaker resistance"
@@ -885,7 +885,7 @@ symptom_maps:
           - id: "S4"
             area: "Ramp/drain patency"
             action: "Verify drain and exit ramps are clear and not blocked."
-      true:
+      "true":
         checks:
           - id: "T1"
             area: "Playfield tilt"

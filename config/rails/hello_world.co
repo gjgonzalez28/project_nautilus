@@ -1,7 +1,7 @@
 """
 Project Nautilus: Main Entry Flow
 
-Orchestrates complete diagnostic session:
+Orchestrates complete diagnostic session.
 1. Discovery: Machine and skill level identification
 2. Symptom Capture: Issue description and details
 3. Diagnostic Reasoning: Generate troubleshooting steps

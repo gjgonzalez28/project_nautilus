@@ -2,13 +2,13 @@
 Project Nautilus: Discovery Flow (Colang 2.0)
 
 Extract machine identity and user skill level.
-Sets NeMo variables:
+Sets NeMo variables.
   - $machine_name (user's description)
   - $manufacturer (from library match)
   - $era (from library match)
   - $skill_level (beginner, intermediate, pro)
 
-MULTI-TURN SUPPORT:
+MULTI-TURN SUPPORT.
 - Turn 1: Check session state, if empty ask question, wait for response
 - Turn 2+: If session state still empty, parse current message as answer
 
